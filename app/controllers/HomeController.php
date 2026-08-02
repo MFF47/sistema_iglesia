@@ -7,4 +7,4 @@ class HomeController extends Controller {
     }
 }
 
-//Esto lo dejaremos hasta acá
+//Esto lo dejaremos hasta acá, ya que no es necesario tener un modelo para esta vista, pero si en el futuro se requiere, podemos crear un modelo y utilizarlo en este controlador.
