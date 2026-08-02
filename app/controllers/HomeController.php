@@ -6,3 +6,5 @@ class HomeController extends Controller {
         $this->view('home.index');
     }
 }
+
+//Esto lo dejaremos hasta acá
