@@ -8,8 +8,17 @@
 </head>
 <body>
     <div class="container py-5">
-        <h1 class="mb-3">Sistema Financiero y Administrativo</h1>
-        <p class="lead">Estructura MVC inicial creada correctamente.</p>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h1 class="mb-0">Sistema Financiero y Administrativo</h1>
+            <a href="index.php?c=auth&a=logout" class="btn btn-outline-secondary btn-sm">Cerrar sesión</a>
+        </div>
+        <p class="lead mb-1">
+            Bienvenido, <?= htmlspecialchars($usuario['nombre_completo']) ?>
+            (<?= htmlspecialchars($usuario['rol_nombre']) ?>).
+        </p>
+        <p class="text-muted small">
+            <?= htmlspecialchars($usuario['rol_descripcion']) ?>
+        </p>
     </div>
 </body>
 </html>

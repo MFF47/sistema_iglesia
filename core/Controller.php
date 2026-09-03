@@ -1,6 +1,6 @@
 <?php
 class Controller {
-    protected function view($view, $data = []) {
+    public function view($view, $data = []) {
         extract($data);
         $file = __DIR__ . '/../app/views/' . str_replace('.', '/', $view) . '.php';
 
@@ -9,5 +9,10 @@ class Controller {
         }
 
         require $file;
+    }
+
+    protected function redirect($url) {
+        header('Location: ' . $url);
+        exit;
     }
 }

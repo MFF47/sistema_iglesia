@@ -1,6 +1,9 @@
 <?php
 class Router {
     public static function route($controller, $action = 'index') {
+        $controller = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $controller) ?: 'home';
+        $action = preg_replace('/[^a-zA-Z0-9_]/', '', (string) $action) ?: 'index';
+
         $controllerName = ucfirst($controller) . 'Controller';
         $controllerFile = __DIR__ . '/../app/controllers/' . $controllerName . '.php';
 
