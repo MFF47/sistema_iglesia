@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/Auth.php';
 require_once __DIR__ . '/View.php';
+require_once __DIR__ . '/Permisos.php';
 
 class Middleware {
     public static function requireAuth() {
@@ -20,5 +21,9 @@ class Middleware {
             View::render('errores.403', ['usuario' => $usuario]);
             exit;
         }
+    }
+
+    public static function requirePermiso($modulo) {
+        self::requireRole(Permisos::rolesPermitidos($modulo));
     }
 }

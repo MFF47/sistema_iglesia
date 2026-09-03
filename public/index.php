@@ -10,5 +10,5 @@ try {
     Router::route($controller, $action);
 } catch (Exception $e) {
     http_response_code(404);
-    echo '<h1>Error</h1><p>' . htmlspecialchars($e->getMessage()) . '</p>';
+    require __DIR__ . '/../app/views/errores/404.php';
 }

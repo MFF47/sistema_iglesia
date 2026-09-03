@@ -1,24 +1,189 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inicio</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container py-5">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <h1 class="mb-0">Sistema Financiero y Administrativo</h1>
-            <a href="index.php?c=auth&a=logout" class="btn btn-outline-secondary btn-sm">Cerrar sesión</a>
-        </div>
-        <p class="lead mb-1">
-            Bienvenido, <?= htmlspecialchars($usuario['nombre_completo']) ?>
-            (<?= htmlspecialchars($usuario['rol_nombre']) ?>).
-        </p>
-        <p class="text-muted small">
-            <?= htmlspecialchars($usuario['rol_descripcion']) ?>
-        </p>
+<?php
+$tituloPagina = 'Dashboard';
+$activeMenu = 'dashboard';
+require __DIR__ . '/../layout/header.php';
+
+$fmtQ = fn($monto) => 'Q' . number_format((float) $monto, 0);
+
+$badgeVariacion = function ($variacion) {
+    if ($variacion['nuevo']) {
+        return '<span class="small text-success"><i class="bi bi-arrow-up"></i> Nuevo</span>';
+    }
+    if ($variacion['pct'] === null) {
+        return '';
+    }
+    $pct = round($variacion['pct'], 1);
+    $clase = $pct >= 0 ? 'text-success' : 'text-danger';
+    $icono = $pct >= 0 ? 'bi-arrow-up' : 'bi-arrow-down';
+    return "<span class=\"small $clase\"><i class=\"bi $icono\"></i> " . abs($pct) . "% vs período anterior</span>";
+};
+?>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-1">
+    <div>
+        <h1 class="h4 mb-1">Dashboard</h1>
+        <p class="text-muted mb-0">Panel general de indicadores financieros — <?= htmlspecialchars($etiquetaPeriodo) ?></p>
     </div>
-</body>
-</html>
+</div>
+
+<form method="get" action="index.php" class="d-flex align-items-end gap-2 my-3">
+    <input type="hidden" name="c" value="home">
+    <input type="hidden" name="a" value="index">
+    <div>
+        <label class="form-label small text-muted mb-1">Período</label>
+        <select name="periodo" class="form-select" onchange="this.form.submit()">
+            <option value="mes_actual" <?= $periodo === 'mes_actual' ? 'selected' : '' ?>>Mes actual</option>
+            <option value="mes_anterior" <?= $periodo === 'mes_anterior' ? 'selected' : '' ?>>Mes anterior</option>
+            <option value="anio_actual" <?= $periodo === 'anio_actual' ? 'selected' : '' ?>>Año actual</option>
+        </select>
+    </div>
+    <button type="submit" class="btn btn-teal"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
+</form>
+
+<div class="row g-3 mb-3">
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Total Ingresos</p>
+                <p class="h4 mb-1"><?= $fmtQ($kpis['total_ingresos']) ?></p>
+                <?= $badgeVariacion($variacionIngresos) ?>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Total Egresos</p>
+                <p class="h4 mb-1"><?= $fmtQ($kpis['total_egresos']) ?></p>
+                <?= $badgeVariacion($variacionEgresos) ?>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Balance del Período</p>
+                <p class="h4 mb-1 <?= $kpis['balance'] >= 0 ? 'text-success' : 'text-danger' ?>"><?= $fmtQ($kpis['balance']) ?></p>
+                <span class="small text-muted"><?= $kpis['balance'] >= 0 ? 'Superávit' : 'Déficit' ?></span>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card h-100">
+            <div class="card-body">
+                <p class="text-muted small mb-1">Movimientos</p>
+                <p class="h4 mb-1"><?= $kpis['movimientos'] ?></p>
+                <span class="small text-muted"><?= $kpis['cantidad_ingresos'] ?> ingresos · <?= $kpis['cantidad_egresos'] ?> egresos</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Ingresos vs Egresos por Mes</h2>
+                <div class="chart-box">
+                    <canvas id="chartIngresosEgresos"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Distribución de Ingresos por Tipo</h2>
+                <?php if (empty($distribucionIngresos)): ?>
+                    <p class="text-muted small mb-0">Sin ingresos registrados en este período.</p>
+                <?php else: ?>
+                    <div class="chart-box chart-box-donut">
+                        <canvas id="chartDistribucion"></canvas>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <h2 class="h6 mb-3">Comparativo Mensual del Año (Balance)</h2>
+        <div class="chart-box chart-box-wide">
+            <canvas id="chartComparativo"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+(function () {
+    const colorTeal = '#0f4c5c';
+    const colorAmber = '#d98c22';
+    const colorRed = '#c0392b';
+    const colorGreen = '#2e9e6f';
+
+    new Chart(document.getElementById('chartIngresosEgresos'), {
+        type: 'bar',
+        data: {
+            labels: <?= json_encode($serieMensual['etiquetas']) ?>,
+            datasets: [
+                {
+                    label: 'Ingresos',
+                    data: <?= json_encode($serieMensual['ingresos']) ?>,
+                    backgroundColor: colorGreen,
+                },
+                {
+                    label: 'Egresos',
+                    data: <?= json_encode($serieMensual['egresos']) ?>,
+                    backgroundColor: colorRed,
+                },
+            ],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+            scales: { y: { beginAtZero: true } },
+        },
+    });
+
+    <?php if (!empty($distribucionIngresos)): ?>
+    new Chart(document.getElementById('chartDistribucion'), {
+        type: 'doughnut',
+        data: {
+            labels: <?= json_encode(array_column($distribucionIngresos, 'nombre')) ?>,
+            datasets: [{
+                data: <?= json_encode(array_map('floatval', array_column($distribucionIngresos, 'total'))) ?>,
+                backgroundColor: [colorTeal, colorAmber, colorGreen, colorRed, '#7c92a3'],
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } },
+        },
+    });
+    <?php endif; ?>
+
+    new Chart(document.getElementById('chartComparativo'), {
+        type: 'bar',
+        data: {
+            labels: <?= json_encode($comparativoAnual['etiquetas']) ?>,
+            datasets: [{
+                label: 'Balance',
+                data: <?= json_encode($comparativoAnual['balance']) ?>,
+                backgroundColor: colorTeal,
+            }],
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: { y: { beginAtZero: true } },
+        },
+    });
+})();
+</script>
+
+<?php require __DIR__ . '/../layout/footer.php'; ?>

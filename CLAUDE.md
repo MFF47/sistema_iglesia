@@ -29,7 +29,7 @@ Cliente: Iglesia Centroamericana Nueva Vida.
 10. Bitácora y configuración (después de la demo si falta tiempo)
 
 ## Fecha objetivo
-Demo funcional: 24 de agosto de 2026.
+Demo funcional: 27 de septiembre de 2026.
 Ritmo: ~2 horas diarias de desarrollo.
 
 ## Decisiones ya tomadas

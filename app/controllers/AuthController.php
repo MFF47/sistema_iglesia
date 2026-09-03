@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/../../core/Controller.php';
 require_once __DIR__ . '/../../core/Auth.php';
+require_once __DIR__ . '/../../core/Csrf.php';
 require_once __DIR__ . '/../models/Usuario.php';
+require_once __DIR__ . '/../models/Bitacora.php';
 
 class AuthController extends Controller {
     private const MAX_INTENTOS = 5;
@@ -19,7 +21,7 @@ class AuthController extends Controller {
             $contrasena = $_POST['contrasena'] ?? '';
             $csrfToken = $_POST['csrf_token'] ?? '';
 
-            if (!hash_equals($_SESSION['csrf_token'] ?? '', $csrfToken)) {
+            if (!Csrf::verify($csrfToken)) {
                 $error = 'Solicitud inválida, intente nuevamente.';
             } elseif ($nombreUsuario === '' || $contrasena === '') {
                 $error = 'Ingrese usuario y contraseña.';
@@ -28,12 +30,10 @@ class AuthController extends Controller {
             }
         }
 
-        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
-
         $this->view('auth.login', [
             'error' => $error,
             'nombreUsuario' => $nombreUsuario,
-            'csrfToken' => $_SESSION['csrf_token'],
+            'csrfToken' => Csrf::token(),
         ]);
     }
 
@@ -52,6 +52,7 @@ class AuthController extends Controller {
 
             $usuarioModel->registrarAccesoExitoso($usuario['id_usuario']);
             Auth::login($usuario);
+            Bitacora::registrar('Login', 'Autenticación', 'Inicio de sesión exitoso');
             $this->redirect('index.php?c=home&a=index');
         }
 
@@ -61,6 +62,12 @@ class AuthController extends Controller {
         if ($usuario && !$usuario['bloqueado']) {
             $usuarioModel->registrarIntentoFallido($usuario['id_usuario'], self::MAX_INTENTOS);
         }
+
+        Bitacora::registrar(
+            'Login fallido',
+            'Autenticación',
+            "Intento de inicio de sesión fallido usando usuario '{$nombreUsuario}' — Contraseña incorrecta"
+        );
 
         return 'Usuario o contraseña incorrectos.';
     }
