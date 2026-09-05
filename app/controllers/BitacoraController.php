@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../core/Controller.php';
 require_once __DIR__ . '/../../core/Middleware.php';
 require_once __DIR__ . '/../models/Bitacora.php';
+require_once __DIR__ . '/../../core/PdfExporter.php';
 
 class BitacoraController extends Controller {
     private const POR_PAGINA = 15;
@@ -30,7 +31,7 @@ class BitacoraController extends Controller {
         ]);
     }
 
-    public function exportarCsv() {
+    public function exportarPdf() {
         Middleware::requirePermiso('bitacora');
 
         $bitacoraModel = new Bitacora();
@@ -39,26 +40,51 @@ class BitacoraController extends Controller {
 
         Bitacora::registrar('Exportar', 'Bitácora', 'Exportación del registro de auditoría');
 
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename="bitacora.csv"');
+        $html = $this->construirHtmlPdf($eventos);
 
-        $salida = fopen('php://output', 'w');
-        fwrite($salida, "\xEF\xBB\xBF");
-        fputcsv($salida, ['Fecha/Hora', 'Usuario', 'Módulo', 'Acción', 'Descripción', 'IP Origen']);
+        PdfExporter::generar($html, 'bitacora_' . date('Ymd_His') . '.pdf', 'landscape');
+    }
 
-        foreach ($eventos as $evento) {
-            fputcsv($salida, [
-                $evento['fecha_evento'],
-                $evento['nombre_usuario'],
-                $evento['modulo'],
-                $evento['accion'],
-                $evento['descripcion'],
-                $evento['ip_origen'],
-            ]);
-        }
+    private function construirHtmlPdf(array $eventos) {
+        ob_start();
+        ?>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <style>
+                body { font-family: 'DejaVu Sans', sans-serif; font-size: 10px; color: #222; }
+                .titulo { background: #0c3a46; color: #fff; padding: 12px 16px; font-size: 15px; font-weight: bold; }
+                .subtitulo { background: #efefef; color: #555; padding: 5px 16px; font-size: 9px; font-style: italic; }
+                table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+                th { background: #16324a; color: #fff; padding: 5px 7px; text-align: left; font-size: 9px; }
+                td { padding: 4px 7px; border-bottom: 1px solid #ddd; font-size: 9px; vertical-align: top; }
+                tr:nth-child(even) td { background: #f4f6f8; }
+            </style>
+        </head>
+        <body>
+            <div class="titulo">Bitácora de Auditoría — Iglesia Centroamericana Nueva Vida</div>
+            <div class="subtitulo">Generado: <?= date('d/m/Y H:i') ?> — Registros: <?= count($eventos) ?></div>
 
-        fclose($salida);
-        exit;
+            <table>
+                <thead>
+                    <tr><th>Fecha/Hora</th><th>Usuario</th><th>Módulo</th><th>Acción</th><th>Descripción</th></tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($eventos as $evento): ?>
+                        <tr>
+                            <td><?= htmlspecialchars($evento['fecha_evento']) ?></td>
+                            <td><?= htmlspecialchars($evento['nombre_usuario']) ?></td>
+                            <td><?= htmlspecialchars($evento['modulo']) ?></td>
+                            <td><?= htmlspecialchars($evento['accion']) ?></td>
+                            <td><?= htmlspecialchars($evento['descripcion']) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </body>
+        </html>
+        <?php
+        return ob_get_clean();
     }
 
     private function obtenerFiltros() {

@@ -59,7 +59,7 @@ class Bitacora extends Model {
         }
 
         if (!empty($filtros['hasta'])) {
-            $condiciones[] = 'fecha_evento <= ?';
+            $condiciones[] = 'fecha_evento < DATE_ADD(?, INTERVAL 1 DAY)';
             $params[] = $filtros['hasta'];
         }
 

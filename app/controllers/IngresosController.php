@@ -6,17 +6,19 @@ require_once __DIR__ . '/../../core/Flash.php';
 require_once __DIR__ . '/../models/Ingreso.php';
 require_once __DIR__ . '/../models/Categoria.php';
 require_once __DIR__ . '/../models/TipoIngreso.php';
-require_once __DIR__ . '/../models/Actividad.php';
 require_once __DIR__ . '/../models/Aportante.php';
 require_once __DIR__ . '/../models/Adjunto.php';
+require_once __DIR__ . '/../models/Factura.php';
 require_once __DIR__ . '/../models/Bitacora.php';
+require_once __DIR__ . '/../models/Reporte.php';
 
 class IngresosController extends Controller {
     private const POR_PAGINA = 10;
     private const ROLES_GESTION = ['Administrador', 'Tesorero'];
     private const EXTENSIONES_PERMITIDAS = ['pdf', 'jpg', 'jpeg', 'png'];
-    private const TAMANO_MAXIMO = 3 * 1024 * 1024; // 3 MB
+    private const TAMANO_MAXIMO = 5 * 1024 * 1024; // 5 MB
     private const DIR_ADJUNTOS = __DIR__ . '/../../storage/adjuntos';
+    private const DIR_FACTURAS = __DIR__ . '/../../storage/facturas';
 
     public function index() {
         Middleware::requirePermiso('ingresos');
@@ -37,6 +39,8 @@ class IngresosController extends Controller {
         $totalPaginas = max(1, (int) ceil($total / self::POR_PAGINA));
         $pagina = min($pagina, $totalPaginas);
 
+        $reporteModel = new Reporte();
+
         $this->view('ingresos.index', [
             'usuario' => Auth::user(),
             'ingresos' => $ingresoModel->listar($filtros, $pagina, self::POR_PAGINA),
@@ -48,6 +52,8 @@ class IngresosController extends Controller {
             'total' => $total,
             'totalFiltrado' => $ingresoModel->totalFiltrado($filtros),
             'kpis' => $ingresoModel->kpisMes(),
+            'mesActualNombre' => Reporte::nombreMesLargo((int) date('n')) . ' ' . date('Y'),
+            'disponibleCajaGeneral' => $reporteModel->disponibleCajaGeneral(),
             'puedeGestionar' => in_array(Auth::user()['rol_nombre'], self::ROLES_GESTION, true),
             'flash' => Flash::get(),
             'csrfToken' => Csrf::token(),
@@ -93,14 +99,13 @@ class IngresosController extends Controller {
         }
 
         $ingresoModel = new Ingreso();
-        $tipoModel = new TipoIngreso();
+        $registroAnterior = $id ? $ingresoModel->buscarPorId($id) : null;
 
         $valores = [
             'fecha_ingreso' => trim($_POST['fecha_ingreso'] ?? ''),
             'id_tipo_ingreso' => $_POST['id_tipo_ingreso'] ?? '',
             'id_categoria' => $_POST['id_categoria'] ?? '',
             'monto' => trim($_POST['monto'] ?? ''),
-            'id_actividad' => $_POST['id_actividad'] ?? '',
             'id_aportante' => $_POST['id_aportante'] ?? '',
             'descripcion' => trim($_POST['descripcion'] ?? ''),
         ];
@@ -108,7 +113,7 @@ class IngresosController extends Controller {
         $errores = $this->validar($valores);
 
         if (!empty($errores)) {
-            $this->view('ingresos.form', $this->datosFormulario($id ? $ingresoModel->buscarPorId($id) : null, $valores, $errores));
+            $this->view('ingresos.form', $this->datosFormulario($registroAnterior, $valores, $errores));
             return;
         }
 
@@ -118,16 +123,7 @@ class IngresosController extends Controller {
 
         $tipoModel = new TipoIngreso();
         $tipo = $tipoModel->buscarPorId((int) $valores['id_tipo_ingreso']);
-        $aportanteNombre = null;
-        if (!empty($valores['id_aportante'])) {
-            $aportanteModel = new Aportante();
-            foreach ($aportanteModel->listarActivos() as $aportante) {
-                if ((int) $aportante['id_aportante'] === (int) $valores['id_aportante']) {
-                    $aportanteNombre = $aportante['nombre_completo'];
-                    break;
-                }
-            }
-        }
+        $aportanteNombre = $this->nombreAportante($valores['id_aportante']);
 
         if ($id) {
             $ingresoModel->actualizar($id, $datos);
@@ -154,12 +150,49 @@ class IngresosController extends Controller {
             Flash::set('success', 'Ingreso registrado correctamente.');
         }
 
-        $errorArchivo = $this->procesarComprobante($idIngreso, $usuario['id_usuario']);
+        [$idFacturaCreada, $errorArchivo] = $this->procesarFacturaAutomatica($idIngreso, $valores, $aportanteNombre, $usuario['id_usuario']);
+
+        if ($idFacturaCreada) {
+            $ingresoModel->vincularFactura($idIngreso, $idFacturaCreada);
+        } elseif ($registroAnterior && $registroAnterior['id_factura']) {
+            // No se subió un archivo nuevo, pero el ingreso ya tenía una factura vinculada:
+            // se propaga el cambio de monto/fecha/aportante hacia el documento vinculado.
+            $facturaModel = new Factura();
+            $facturaModel->actualizarCamposClave(
+                $registroAnterior['id_factura'],
+                $valores['monto'],
+                $valores['fecha_ingreso'],
+                $aportanteNombre ?: 'Aportante no identificado'
+            );
+            Bitacora::registrar(
+                'Modificar',
+                'Facturas',
+                "Actualización en cascada del documento {$registroAnterior['factura_numero']} por edición del ingreso #{$idIngreso}",
+                'facturas',
+                $registroAnterior['id_factura']
+            );
+        }
+
         if ($errorArchivo) {
             Flash::set('danger', $errorArchivo);
         }
 
         $this->redirect('index.php?c=ingresos&a=index');
+    }
+
+    private function nombreAportante($idAportante) {
+        if (empty($idAportante)) {
+            return null;
+        }
+
+        $aportanteModel = new Aportante();
+        foreach ($aportanteModel->listarActivos() as $aportante) {
+            if ((int) $aportante['id_aportante'] === (int) $idAportante) {
+                return $aportante['nombre_completo'];
+            }
+        }
+
+        return null;
     }
 
     private function validar(array $valores) {
@@ -196,51 +229,63 @@ class IngresosController extends Controller {
         return $d && $d->format('Y-m-d') === $fecha;
     }
 
-    private function procesarComprobante($idIngreso, $idUsuario) {
+    /**
+     * Si el usuario adjuntó un archivo (foto o PDF) al registrar/editar el ingreso,
+     * lo guarda y crea automáticamente el documento correspondiente en Facturas y Recibos.
+     */
+    private function procesarFacturaAutomatica($idIngreso, array $valores, $aportanteNombre, $idUsuario) {
         if (empty($_FILES['comprobante']['name'])) {
-            return null;
+            return [null, null];
         }
 
         $archivo = $_FILES['comprobante'];
 
         if ($archivo['error'] !== UPLOAD_ERR_OK) {
-            return 'No se pudo subir el comprobante. Intente nuevamente.';
+            return [null, 'No se pudo subir el comprobante. Intente nuevamente.'];
         }
 
         if ($archivo['size'] > self::TAMANO_MAXIMO) {
-            return 'El comprobante supera el tamaño máximo permitido (3 MB).';
+            return [null, 'El comprobante supera el tamaño máximo permitido (5 MB).'];
         }
 
         $extension = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
 
         if (!in_array($extension, self::EXTENSIONES_PERMITIDAS, true)) {
-            return 'Formato de comprobante no permitido. Use PDF, JPG o PNG.';
+            return [null, 'Formato de comprobante no permitido. Use PDF, JPG o PNG.'];
         }
 
-        if (!is_dir(self::DIR_ADJUNTOS)) {
-            mkdir(self::DIR_ADJUNTOS, 0755, true);
+        if (!is_dir(self::DIR_FACTURAS)) {
+            mkdir(self::DIR_FACTURAS, 0755, true);
         }
 
-        $nombreAlmacenado = 'ingreso_' . $idIngreso . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
-        $rutaDestino = self::DIR_ADJUNTOS . '/' . $nombreAlmacenado;
+        $nombreAlmacenado = 'factura_' . bin2hex(random_bytes(8)) . '.' . $extension;
+        $rutaDestino = self::DIR_FACTURAS . '/' . $nombreAlmacenado;
 
         if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
-            return 'No se pudo guardar el comprobante en el servidor.';
+            return [null, 'No se pudo guardar el comprobante en el servidor.'];
         }
 
-        $adjuntoModel = new Adjunto();
-        $adjuntoModel->crear([
-            'tabla_origen' => 'ingresos',
-            'id_origen' => $idIngreso,
-            'nombre_original' => basename($archivo['name']),
-            'nombre_almacenado' => $nombreAlmacenado,
-            'ruta' => $nombreAlmacenado,
-            'tipo_mime' => mime_content_type($rutaDestino),
-            'tamano_bytes' => $archivo['size'],
+        $facturaModel = new Factura();
+        $idFactura = $facturaModel->crear([
+            'numero_documento' => 'ING-' . $idIngreso,
+            'tipo_documento' => 'recibo',
+            'beneficiario' => $aportanteNombre ?: 'Aportante no identificado',
+            'fecha_emision' => $valores['fecha_ingreso'],
+            'monto' => $valores['monto'],
+            'descripcion' => "Comprobante generado automáticamente desde el ingreso #{$idIngreso}",
+            'ruta_archivo' => $nombreAlmacenado,
             'id_usuario_registro' => $idUsuario,
         ]);
 
-        return null;
+        Bitacora::registrar(
+            'Crear',
+            'Facturas',
+            "Registro automático de documento (ING-{$idIngreso}) generado desde Ingresos",
+            'facturas',
+            $idFactura
+        );
+
+        return [$idFactura, null];
     }
 
     public function verComprobante() {
@@ -276,8 +321,22 @@ class IngresosController extends Controller {
 
         $id = (int) ($_POST['id'] ?? 0);
         $ingresoModel = new Ingreso();
+        $registro = $ingresoModel->buscarPorId($id);
+
         $ingresoModel->cambiarEstado($id, 0);
         Bitacora::registrar('Anular', 'Ingresos', "Anulación de ingreso #{$id}", 'ingresos', $id);
+
+        if ($registro && $registro['id_factura']) {
+            $facturaModel = new Factura();
+            $facturaModel->cambiarEstado($registro['id_factura'], 0);
+            Bitacora::registrar(
+                'Anular',
+                'Facturas',
+                "Anulación en cascada del documento {$registro['factura_numero']} por anulación del ingreso #{$id}",
+                'facturas',
+                $registro['id_factura']
+            );
+        }
 
         Flash::set('success', 'Ingreso anulado correctamente.');
         $this->redirect('index.php?c=ingresos&a=index');
@@ -316,8 +375,8 @@ class IngresosController extends Controller {
     private function datosFormulario($registro, array $valoresPost, array $errores) {
         $categoriaModel = new Categoria();
         $tipoModel = new TipoIngreso();
-        $actividadModel = new Actividad();
         $aportanteModel = new Aportante();
+        $reporteModel = new Reporte();
 
         $valores = $registro ?: [];
         if (!empty($valoresPost)) {
@@ -331,8 +390,8 @@ class IngresosController extends Controller {
             'errores' => $errores,
             'categorias' => $categoriaModel->listar(['buscar' => '', 'tipo' => 'ingreso', 'activo' => '1'], 1, 100),
             'tipos' => $tipoModel->listarActivos(),
-            'actividades' => $actividadModel->listarActivas(),
             'aportantes' => $aportanteModel->listarActivos(),
+            'disponibleCajaGeneral' => $reporteModel->disponibleCajaGeneral(),
             'csrfToken' => Csrf::token(),
         ];
     }

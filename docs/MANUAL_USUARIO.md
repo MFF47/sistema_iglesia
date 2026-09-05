@@ -1,7 +1,7 @@
 # Manual de Usuario
 ## Sistema de Control Financiero y Administrativo — Iglesia Centroamericana Nueva Vida
 
-Este manual describe los módulos ya construidos y cómo usarlos. Corresponde al avance hasta el módulo de Bitácora (pendiente solo la pantalla de Configuración, sin mockup de referencia, y recuperación de contraseña).
+Este manual describe los módulos ya construidos y cómo usarlos. Corresponde al avance hasta el módulo de Bitácora, más el módulo adicional de Aportantes (pendiente solo la pantalla de Configuración, sin mockup de referencia, y recuperación de contraseña).
 
 **Demo funcional:** 27 de septiembre de 2026.
 
@@ -9,12 +9,44 @@ Este manual describe los módulos ya construidos y cómo usarlos. Corresponde al
 
 ## 1. Ingreso al sistema (Login)
 
+### Cómo levantar el servicio (XAMPP)
+
+**Opción normal — Panel de control de XAMPP:**
+1. Abra **XAMPP Control Panel** (`C:\xampp\xampp-control.exe`).
+2. Presione **Start** en los módulos **Apache** y **MySQL**. Ambos deben quedar en verde.
+
+**Opción manual — sin el panel de control** (por ejemplo, si el panel no abre o prefiere hacerlo desde la terminal):
+
+1. Abra dos ventanas de línea de comandos (o dos pestañas de PowerShell) en `C:\xampp`.
+2. En la primera, inicie Apache:
+   ```
+   C:\xampp\apache_start.bat
+   ```
+   o directamente:
+   ```
+   C:\xampp\apache\bin\httpd.exe
+   ```
+3. En la segunda, inicie MySQL:
+   ```
+   C:\xampp\mysql_start.bat
+   ```
+   o directamente:
+   ```
+   C:\xampp\mysql\bin\mysqld.exe --defaults-file=C:\xampp\mysql\bin\my.ini --standalone
+   ```
+4. **No cierre esas dos ventanas** mientras trabaja — cerrarlas detiene el servicio. Minimícelas en vez de cerrarlas.
+5. Para detener el servicio: `C:\xampp\apache_stop.bat` y `C:\xampp\mysql_stop.bat`, o simplemente cierre las ventanas de la consola. Si un proceso queda colgado, `C:\xampp\killprocess.bat` lo fuerza a terminar.
+
+> **Nota de puertos:** Apache escucha en el puerto **80** y el MySQL de XAMPP en el puerto **3307** (no el 3306 por defecto — así está configurado en `mysql\bin\my.ini` y en `config/database.php` de este proyecto, para no chocar con otra instancia de MySQL que pueda estar instalada como servicio de Windows en esta máquina). Si Apache no arranca, generalmente es porque otro programa (Skype, IIS, otro Apache) ya está usando el puerto 80.
+
+Una vez ambos servicios están arriba, continúe con el login:
+
 **URL local:** `http://localhost/sistema_iglesia/public/index.php?c=auth&a=login`
 
 1. Ingrese su **usuario** y **contraseña**.
 2. Si los datos son incorrectos, el sistema muestra un mensaje genérico ("Usuario o contraseña incorrectos") sin indicar cuál campo falló, por seguridad.
 3. Después de **5 intentos fallidos consecutivos**, la cuenta se bloquea automáticamente. Debe contactar a un Administrador para desbloquearla.
-4. Para salir, use **Cerrar sesión** en la esquina superior derecha (visible en todas las pantallas).
+4. Para salir, use **Cerrar sesión** en la esquina superior derecha (visible en todas las pantallas; en celular se muestra solo el ícono).
 
 > "¿Olvidó su contraseña?" todavía no está implementado (mockups 02 y 03, pendientes).
 
@@ -40,11 +72,12 @@ Estos usuarios se crearon con scripts temporales (`tmp_create_admin.php`, `tmp_c
 | Egresos | Gestionar | Gestionar | Solo ver | Sin acceso |
 | Facturas y Recibos | Gestionar | Gestionar | Solo ver | Sin acceso |
 | Categorías | Gestionar | Sin acceso | Sin acceso | Sin acceso |
+| Aportantes | Gestionar | Sin acceso | Sin acceso | Sin acceso |
 | Usuarios y Roles | Gestionar | Sin acceso | Sin acceso | Sin acceso |
 | Reportería | Usar | Usar | Usar | Usar |
 | Bitácora | Ver | Sin acceso | Ver | Sin acceso |
 
-"Gestionar" incluye crear, editar y anular. "Solo ver"/"Ver" significa que el módulo aparece en el menú y se puede consultar, pero no aparecen los botones para crear, editar o anular. El menú lateral (sidebar) muestra automáticamente solo las opciones permitidas para el rol de la sesión activa.
+"Gestionar" incluye crear, editar y anular. "Solo ver"/"Ver" significa que el módulo aparece en el menú y se puede consultar, pero no aparecen los botones para crear, editar o anular. El menú lateral (sidebar) muestra automáticamente solo las opciones permitidas para el rol de la sesión activa — tanto en escritorio como en el menú móvil.
 
 ---
 
@@ -52,15 +85,41 @@ Estos usuarios se crearon con scripts temporales (`tmp_create_admin.php`, `tmp_c
 
 Pantalla de inicio tras iniciar sesión (`Dashboard` en el menú).
 
-- **Selector de período**: Mes actual, Mes anterior o Año actual. Al cambiarlo y presionar "Actualizar", se recalculan todos los indicadores y gráficas.
-- **Tarjetas KPI**: Total Ingresos, Total Egresos, Balance del Período (superávit o déficit) y Movimientos totales, cada una comparada contra el período anterior equivalente (↑/↓ %).
-- **Gráfica "Ingresos vs Egresos por Mes"**: barras de los últimos 6 meses.
-- **Gráfica "Distribución de Ingresos por Tipo"**: dona con el peso de Diezmos, Ofrendas, Donaciones y Actividades Especiales.
-- **Gráfica "Comparativo Mensual del Año"**: balance (ingresos − egresos) mes a mes del año en curso.
+- **Selector de Mes y Año**: seleccione cualquier mes/año (hasta 4 años atrás). Al entrar por primera vez siempre muestra el **mes actual** por defecto.
+- **Tarjetas KPI**:
+  - **Total Ingresos** y **Total Egresos** del mes/año elegido, comparados contra el período anterior equivalente (↑/↓ %).
+  - **Disponible Caja General**: saldo acumulado **histórico** (todos los ingresos activos menos todos los egresos activos desde siempre) — no depende del mes seleccionado, siempre refleja cuánto hay disponible en caja hoy. Se muestra en un cuadro verde independiente para no confundirlo con los totales del período.
+  - **Movimientos** del período: cantidad de ingresos y egresos.
+- **Gráfica "Ingresos vs Egresos por Mes"**: barras de los últimos 6 meses, con el **monto en Quetzales sobre cada barra**.
+- **Gráfica "Distribución de Ingresos por Tipo"**: dona con el peso de Diezmos, Ofrendas, Donaciones y Actividades Especiales — muestra el **porcentaje sobre cada segmento** y el **total general en el centro** de la dona.
+- **Gráfica "Comparativo Mensual del Año"**: balance (ingresos − egresos) mes a mes del año en curso, con el monto sobre cada barra; se mantiene compacta para no ocupar espacio de más.
 
 ---
 
-## 4. Usuarios y Roles *(solo Administrador)*
+## 4. Categorías *(solo Administrador)*
+
+Menú: **Gestión → Categorías**. Clasifican todos los ingresos y egresos del sistema.
+
+- **Dos tablas separadas**: "Categorías de Ingreso" y "Categorías de Egreso", cada una ordenada alfabéticamente — nunca se mezclan en una sola tabla.
+- **Filtros** (aplican a ambas tablas a la vez): buscar por nombre y estado (Activas/Inactivas).
+- **+ Nueva Categoría**: nombre, tipo, descripción (opcional), estado. La columna **Movimientos** muestra cuántos ingresos o egresos ya usan esa categoría.
+- No se permite un nombre duplicado dentro del mismo tipo (puede repetirse el nombre entre una categoría de ingreso y una de egreso).
+- **No se pueden eliminar** — solo desactivar, para no perder el historial de los movimientos que ya las usan.
+
+---
+
+## 5. Aportantes *(solo Administrador)*
+
+Menú: **Gestión → Aportantes**. Son las personas identificadas en los ingresos (quién dio un diezmo, una donación, etc.).
+
+- **Listado**: buscar por nombre, documento o correo; filtrar por estado. La columna **Ingresos** muestra cuántos ingresos tiene registrados esa persona.
+- **+ Nuevo Aportante**: nombre completo (obligatorio), documento de identidad, teléfono, correo, dirección, observaciones — todos opcionales salvo el nombre.
+- **Editar** y **Activar/Desactivar**, igual que en los demás catálogos.
+- También se puede crear un aportante **al vuelo** desde el formulario de Ingresos (botón "+ Registrar Nuevo Aportante"), sin pasar por esta pantalla — esta vista sirve para **corregir o completar** sus datos después.
+
+---
+
+## 6. Usuarios y Roles *(solo Administrador)*
 
 Menú: **Gestión → Usuarios y Roles**.
 
@@ -71,80 +130,84 @@ Menú: **Gestión → Usuarios y Roles**.
 
 ---
 
-## 5. Categorías *(solo Administrador)*
-
-Menú: **Gestión → Categorías**. Clasifican todos los ingresos y egresos del sistema.
-
-- **Listado**: buscar por nombre, filtrar por tipo (Ingreso/Egreso) y estado. La columna **Movimientos** muestra cuántos ingresos o egresos ya usan esa categoría.
-- **+ Nueva Categoría**: nombre, tipo, descripción (opcional), estado.
-- No se permite un nombre duplicado dentro del mismo tipo (puede repetirse el nombre entre una categoría de ingreso y una de egreso).
-- **No se pueden eliminar** — solo desactivar, para no perder el historial de los movimientos que ya las usan.
-
----
-
-## 6. Ingresos *(Administrador y Tesorero gestionan; Supervisor solo consulta)*
+## 7. Ingresos *(Administrador y Tesorero gestionan; Supervisor solo consulta)*
 
 Menú: **Movimientos → Ingresos**.
 
-- **KPIs del mes**: total, cantidad de registros y promedio diario.
+- **Disponible Caja General**: visible en un cuadro verde tanto en el listado como en el formulario de registro, siempre actualizado con los datos más recientes.
+- **KPIs**: total del mes actual (con el nombre del mes visible, ej. "Total de Septiembre 2026"), cantidad de registros y promedio diario.
 - **Filtros**: rango de fechas, categoría, tipo de ingreso.
 - **+ Nuevo Ingreso**:
-  - Fecha, **Tipo de Ingreso** (Diezmo, Ofrenda, Donación Especial, Actividad Especial), Categoría, Monto, Actividad asociada (opcional), Descripción (opcional).
-  - **Aportante**: opcional en general, pero **obligatorio para Diezmo y Donación Especial**. Puede elegir uno ya registrado o crear uno nuevo sin salir del formulario con el botón **"+ Registrar Nuevo Aportante"**.
-  - **Comprobante**: opcional, PDF/JPG/PNG hasta 3 MB. Se puede arrastrar el archivo a la zona marcada o hacer clic para elegirlo.
-- En el listado, el ícono de ojo bajo "Comprobante" abre el archivo adjunto (si existe).
-- **Anular**: oculta el ingreso del listado y de todos los totales/KPIs. El registro no se borra de la base de datos (queda para auditoría en la Bitácora), pero ya no puede reactivarse desde la pantalla.
+  - Fecha, **Tipo de Ingreso** (Diezmo, Ofrenda, Donación Especial, Actividad Especial), Categoría, Monto, Descripción (opcional).
+  - **Aportante**: opcional en general, pero **obligatorio para Diezmo y Donación Especial**. Puede elegir uno ya registrado o crear uno nuevo sin salir del formulario con el botón **"+ Registrar Nuevo Aportante"**. Solo Administrador y Tesorero llegan a esta pantalla.
+  - **Comprobante**: opcional — **Tomar Foto** (abre la cámara del dispositivo) o **Elegir Archivo** (PDF/JPG/PNG hasta 5 MB), o arrastrarlo a la zona marcada. Al guardarlo, **se crea automáticamente un documento en Facturas y Recibos** vinculado a este ingreso (numerado `ING-<id>`).
+- En el listado, el ícono de ojo bajo "Comprobante" abre ese documento.
+- **Editar un ingreso que ya tiene un documento vinculado**: el sistema avisa antes de guardar que el documento también se actualizará (monto, fecha y aportante) con los nuevos datos, y lo hace automáticamente al confirmar.
+- **Anular**: oculta el ingreso del listado y de todos los totales/KPIs, y **anula también el documento vinculado**, avisando antes con un mensaje de confirmación. El registro no se borra de la base de datos (queda para auditoría en la Bitácora).
+- Todo cambio en cascada (crear/editar/anular documentos por esta vía) queda registrado en la **Bitácora**.
 
 ---
 
-## 7. Egresos *(mismo esquema de permisos que Ingresos)*
+## 8. Egresos *(mismo esquema de permisos que Ingresos)*
 
 Menú: **Movimientos → Egresos**.
 
-- **KPIs del mes**: total, cantidad de registros y monto promedio.
+- **Disponible Caja General**: igual que en Ingresos, visible en el listado y en el formulario.
+- **KPIs**: total del mes actual (con el nombre del mes visible), cantidad de registros y monto promedio.
 - **Filtros**: rango de fechas, categoría, beneficiario.
 - **+ Nuevo Egreso**: fecha, categoría, monto, **Beneficiario** (obligatorio) y **Descripción** (obligatoria), Observaciones (opcional).
-- **Vincular Factura (opcional)**: elija una factura ya registrada, o cree una nueva con el botón **"+ Registrar Nueva Factura"** sin salir del formulario.
-- **Anular**: igual que en Ingresos, oculta el registro de listados y totales sin borrarlo.
+  - Si el **monto** ingresado supera el **Disponible Caja General** actual, aparece una advertencia visual bajo el campo (no bloquea el registro, es solo informativa).
+- **Comprobante**: igual que en Ingresos — **Tomar Foto** o **Elegir Archivo** (PDF/JPG/PNG hasta 5 MB); al guardarlo se crea automáticamente el documento en Facturas y Recibos (numerado `EGR-<id>`).
+- **Vincular Factura (opcional)**: alternativa manual — elija una factura ya registrada, o cree una nueva con el botón **"+ Registrar Nueva Factura"** sin salir del formulario. Si sube un comprobante directamente, ese siempre tiene prioridad sobre esta selección.
+- **Editar/Anular** con documento vinculado: mismo comportamiento en cascada que en Ingresos (avisa, actualiza o anula el documento vinculado, y lo registra en Bitácora).
 
 ---
 
-## 8. Facturas y Recibos *(mismo esquema de permisos)*
+## 9. Facturas y Recibos *(mismo esquema de permisos)*
 
-Menú: **Movimientos → Facturas y Recibos**. Son los documentos que respaldan los ingresos/egresos (Factura, Recibo o Nota de Crédito).
+Menú: **Movimientos → Facturas y Recibos**. Aquí se ven **todos** los documentos del sistema, generados automáticamente desde Ingresos/Egresos o registrados manualmente aquí — Factura, Recibo o Nota de Crédito.
 
-- **Filtros**: buscar por número de documento o beneficiario, tipo de documento, rango de fechas de emisión.
-- **+ Nueva Factura**: número de documento, tipo, fecha de emisión, monto, beneficiario/emisor, descripción (opcional).
+- **Filtros**: buscar por número de documento o beneficiario, tipo de documento, rango de fechas de emisión, y **"Vinculado a"** (Ingresos / Egresos / Sin vincular) para ver de un vistazo el origen de cada documento.
+- **+ Nueva Factura**: número de documento, tipo, fecha de emisión, monto, **Beneficiario / Aportante**, descripción (opcional).
 - **Archivo del documento**: **obligatorio al crear** (PDF/JPG/PNG hasta 5 MB). Al editar es opcional — si no se sube uno nuevo, se conserva el archivo original.
-- **Vincular a Egreso (opcional)**: asocia el documento a un egreso ya existente; la columna "Vinculado a" del listado muestra a qué egreso pertenece.
-- **Anular**: mismo comportamiento que en los demás módulos.
+- **Vincular a un Movimiento (opcional)**: asocie el documento a un **Egreso** o a un **Ingreso** ya existente. La columna "Vinculado a" del listado muestra a cuál pertenece.
+- **Editar un documento vinculado**: el sistema avisa antes de guardar que el ingreso/egreso asociado también se actualizará (monto, fecha, beneficiario), y lo hace automáticamente al confirmar.
+- **Anular**: si el documento está vinculado, también anula el ingreso/egreso asociado (con aviso previo). El registro no se borra de la base de datos.
 
 ---
 
-## 9. Reportería *(todos los roles, incluido Consulta)*
+## 10. Reportería *(todos los roles, incluido Consulta)*
 
 Menú: **Reportes → Reportería**.
 
-1. Elija **Tipo de Reporte** (Ingresos o Egresos), opcionalmente una **Categoría**, y el rango de fechas (**Desde/Hasta**, obligatorios).
-2. Presione **Generar** para ver la vista previa: KPIs (Total del período, Registros, Promedio) y la tabla detallada, con el total al pie.
-3. **Exportar Excel**: descarga un archivo `.csv` (se abre directamente en Excel, con acentos correctos).
-4. **Exportar PDF**: abre una vista de impresión limpia en una pestaña nueva; en el diálogo de impresión del navegador, elija **"Guardar como PDF"** como destino.
+1. Elija **Tipo de Reporte**:
+   - **Reporte de Ingresos** o **Reporte de Egresos** (con filtro opcional de Categoría).
+   - **Reporte Consolidado (Ingresos y Egresos)**: muestra ambos movimientos juntos en una sola tabla ordenada por fecha, con Total Ingresos, Total Egresos y Balance del período.
+2. Complete el rango de fechas (**Desde/Hasta**, obligatorios) y presione **Generar** para ver la vista previa con sus KPIs y la tabla detallada.
+3. **Exportar Excel**: descarga un archivo `.xlsx` real con estilo profesional (colores institucionales, encabezados resaltados, montos con formato de moneda, totales destacados) — no un CSV.
+4. **Exportar PDF**: descarga directamente un PDF con el mismo estilo institucional (no abre ninguna ventana de impresión).
+5. Cada vez que se presiona **Generar** (no solo al exportar), la consulta queda registrada en la Bitácora, ya que desde ahí se puede ver información financiera sensible.
 
 ---
 
-## 10. Bitácora *(Administrador y Supervisor)*
+## 11. Bitácora *(Administrador y Supervisor)*
 
 Menú: **Reportes → Bitácora**. Registro de auditoría de todo lo que ocurre en el sistema.
 
-- Registra automáticamente: inicios de sesión (exitosos y fallidos), creación/modificación/anulación de usuarios, categorías, ingresos, egresos y facturas, y cada exportación realizada desde Reportería o desde la propia Bitácora.
+- Registra automáticamente: inicios de sesión (exitosos y fallidos), creación/modificación/anulación en todos los módulos (incluyendo los cambios en cascada entre movimientos y documentos vinculados), cada consulta generada en Reportería, y cada exportación.
 - **Es de solo lectura**: ningún evento puede modificarse ni eliminarse, para garantizar la integridad de la auditoría.
-- **Filtros**: rango de fecha/hora, usuario, módulo, acción.
-- **Exportar Bitácora**: descarga el registro filtrado en CSV.
+- La columna **Descripción** muestra cada dato en su propia línea (tipo, monto, involucrados) en vez de una sola oración separada por guiones, para que sea más fácil de leer.
+- **Filtros**: rango de fecha, usuario, módulo, acción. El filtro de fecha incluye el día completo (de 00:00:00 a 23:59:59), así que buscar con la fecha de hoy sí muestra los eventos de hoy.
+- **Exportar Bitácora**: descarga un **PDF** con estilo institucional (ya no exporta a Excel, y ya no muestra la columna IP Origen ni en pantalla ni en la exportación).
 
 ---
 
 ## Notas para quien administre el sistema
 
-- Los comprobantes e imágenes de facturas se guardan en `storage/adjuntos/` y `storage/facturas/`, **fuera del acceso público** (protegidos con `.htaccess`); solo se pueden ver a través del sistema, con sesión iniciada y permiso sobre el módulo correspondiente.
+- Los comprobantes y documentos (Ingresos, Egresos y Facturas) se guardan en `storage/facturas/`, y los comprobantes antiguos previos a este cambio siguen disponibles en `storage/adjuntos/` — ambas carpetas **fuera del acceso público** (protegidas con `.htaccess`); solo se pueden ver a través del sistema, con sesión iniciada y permiso sobre el módulo correspondiente.
+- El proyecto ahora usa **Composer** (`composer.json` / `composer.lock` / carpeta `vendor/`, también protegida por `.htaccess`) para dos librerías: `phpoffice/phpspreadsheet` (Excel) y `dompdf/dompdf` (PDF). Si se copia el proyecto a otra máquina, hay que correr `composer install` una vez. Esto requirió habilitar las extensiones de PHP `gd` y `zip` en `C:\xampp\php\php.ini` (ya están activadas en este equipo).
+- **Zona horaria**: `php.ini` traía `Europe/Berlin` de fábrica; se corrigió a `America/Guatemala` para que las horas mostradas en el sistema (ej. "Generado:" en los reportes) coincidan con la hora real.
+- **Diseño responsivo**: el menú lateral se oculta en pantallas de celular y se abre con el botón de hamburguesa (☰) junto al logo. Si algo se ve apretado en un equipo específico, revisar primero el zoom del navegador.
 - Los archivos `tmp_create_admin.php` y `tmp_create_test_users.php` son herramientas de un solo uso para crear los usuarios iniciales. Pueden borrarse cuando ya no se necesiten.
-- **Pendiente** (no bloqueante para la demo): pantalla de Configuración del sistema (la tabla existe en la base de datos pero no tiene mockup de referencia) y recuperación de contraseña por correo.
+- **Pendiente** (no bloqueante para la demo): pantalla de Configuración del sistema (la tabla existe en la base de datos pero no tiene mockup de referencia), recuperación de contraseña por correo, y una decisión pendiente sobre cómo registrar traslados internos entre caja y banco (el esquema actual no tiene concepto de "cuentas").
+- **Cambio de esquema de base de datos**: se agregó la columna `id_factura` (nullable) a la tabla `ingresos`, para que los ingresos también puedan vincularse a un documento igual que los egresos. Es un cambio aditivo — no afecta ni borra datos existentes.

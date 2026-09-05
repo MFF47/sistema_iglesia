@@ -1,0 +1,98 @@
+# Reporte de Avance
+## Sistema de Control Financiero y Administrativo — Iglesia Centroamericana Nueva Vida
+
+**Fecha del reporte:** 5 de septiembre de 2026
+**Demo funcional:** 27 de septiembre de 2026
+
+---
+
+## Estado del plan (10 módulos)
+
+| # | Módulo | Estado |
+|---|---|---|
+| 1-5 | Estructura, BD, autenticación, roles/middleware, layout base | ✅ Completado |
+| 6 | Gestión de usuarios y roles | ✅ Completado |
+| 7 | Categorías | ✅ Completado |
+| 8 | Ingresos / Egresos / Facturas | ✅ Completado |
+| 9 | Reportería y Dashboard | ✅ Completado |
+| 10 | Bitácora | ✅ Completado — falta solo Configuración (sin mockup) |
+| — | Aportantes (módulo extra, no listado originalmente) | ✅ Completado |
+
+---
+
+## Módulos funcionales
+
+### Autenticación
+Login con `password_verify`, bloqueo tras 5 intentos fallidos, sesiones seguras (regeneración de ID, CSRF en todos los formularios).
+
+### Roles y permisos
+Administrador, Tesorero, Supervisor, Consulta. Matriz centralizada en `config/permisos.php` (una sola fuente de verdad que usan tanto el sidebar como cada controlador), con permisos de grano fino (ej. Supervisor ve Ingresos/Egresos pero no puede crear ni editar).
+
+### Layout base
+Topbar + sidebar con menú dinámico según rol. **Ahora responsivo**: en móvil el sidebar se oculta y se abre con botón de hamburguesa.
+
+### Usuarios y Roles *(Administrador)*
+CRUD completo, activar/desactivar, no se puede desactivar la propia sesión.
+
+### Categorías *(Administrador)*
+Separadas en dos tablas (Ingreso / Egreso), cada una alfabética; no se eliminan, solo se desactivan.
+
+### Aportantes *(Administrador, módulo nuevo)*
+CRUD completo (antes solo existía alta rápida desde Ingresos); accesible desde Gestión → Aportantes.
+
+### Ingresos y Egresos *(Administrador/Tesorero gestionan, Supervisor solo consulta)*
+- KPIs del mes con el **nombre del mes visible** (ej. "Total de Septiembre 2026").
+- **"Disponible Caja General"** visible en cuadro verde separado (saldo acumulado histórico, no solo del período), tanto en los listados como en los formularios de creación/edición.
+- Adjuntar comprobante por **archivo o cámara del dispositivo** → genera automáticamente el documento en Facturas y Recibos (requirió agregar la columna `id_factura` a la tabla `ingresos`, que no la tenía).
+- Egresos: advertencia visual si el monto supera el disponible.
+- **Cascada de ediciones/anulaciones**: si un ingreso/egreso tiene factura vinculada, editarlo o anularlo pide confirmación y propaga el cambio al documento (y viceversa desde Facturas), quedando registrado en Bitácora en ambos sentidos.
+
+### Facturas y Recibos *(mismo esquema de permisos)*
+- Puede vincularse tanto a un Ingreso como a un Egreso (antes solo a Egreso).
+- Filtro **"Vinculado a"** (Ingresos / Egresos / Sin vincular).
+- Etiqueta "Beneficiario / Aportante".
+
+### Dashboard
+- Selector de Mes/Año (antes solo "mes actual/anterior/año").
+- Gráficas con **datos numéricos dentro** (plugin `chartjs-plugin-datalabels`): dona con porcentaje por segmento y total en el centro, barras con el monto Q encima. Gráfica "Comparativo Anual" reducida a la mitad de alto.
+
+### Reportería *(todos los roles)*
+- Tres modos: Ingresos, Egresos y **Consolidado** (ambos juntos, con Total Ingresos / Total Egresos / Balance).
+- Exportación real a **Excel (.xlsx)** y **PDF**, con la paleta de colores del sistema y formato de moneda correcto (antes era CSV / ventana de impresión).
+- Cada "Generar" queda registrado en Bitácora como consulta (no solo las exportaciones).
+
+### Bitácora *(Administrador y Supervisor)*
+Registra automáticamente login, altas/bajas/cambios en todos los módulos, cascadas y consultas de reportes. Descripción mostrada en líneas separadas (no en una sola oración con guiones). Exporta **solo a PDF** (se quitó Excel a pedido). Corregido un bug real: filtrar por la fecha de hoy no mostraba nada.
+
+---
+
+## Infraestructura y correcciones técnicas
+
+- **Composer** instalado (no existía) con **PhpOffice/PhpSpreadsheet** (Excel real) y **Dompdf** (PDF real); se habilitaron las extensiones PHP `gd` y `zip` que XAMPP traía apagadas.
+- **Zona horaria corregida**: `php.ini` tenía `Europe/Berlin` de fábrica; ahora es `America/Guatemala`.
+- **Seguridad**: `storage/` y `vendor/` protegidos con `.htaccess` (`Require all denied`) contra acceso directo por URL — importante porque todo el proyecto vive bajo `htdocs/`, no solo `public/`.
+- Se resolvió una corrupción real de MySQL (motor Aria + tabla de privilegios) que impedía arrancar el servicio; quedó documentado el diagnóstico por si se repite.
+- `.gitignore` agregado (no existía) para no versionar `vendor/`.
+
+---
+
+## Pendiente
+
+- **Pantalla de Configuración** del sistema (tabla `configuracion` ya existe en la BD, vacía; no hay mockup de referencia entre los 16 diseños).
+- **Recuperación de contraseña** (mockups 02 y 03, no construidos).
+- **Traslados internos entre caja y banco**: el esquema de 13 tablas no tiene concepto de "cuentas"; queda pendiente de decisión con quien lleva la tesorería.
+- Revisar antes de producción: mover el `DocumentRoot` del hosting final a `public/`, o replicar los `.htaccess` de protección a `app/`, `core/`, `config/`.
+- Confirmar visualmente el diseño responsivo en un celular real (se verificó matemáticamente que no hay desbordamiento horizontal, pero la herramienta de captura usada en desarrollo no permite simular un ancho de teléfono real menor a ~500px).
+
+---
+
+## Usuarios de prueba
+
+| Usuario | Contraseña | Rol |
+|---|---|---|
+| `admin` | `Admin1234!` | Administrador |
+| `tesorero1` | `Tester123!` | Tesorero |
+| `supervisor1` | `Tester123!` | Supervisor |
+| `consulta1` | `Tester123!` | Consulta |
+
+*(scripts `tmp_create_admin.php` / `tmp_create_test_users.php` — borrar o cambiar contraseñas antes de producción)*

@@ -132,14 +132,16 @@ class Egreso extends Model {
     }
 
     public function actualizar($id, array $datos) {
+        // id_factura NO se toca aquí a propósito: se administra únicamente vía
+        // vincularFactura(), para no romper el vínculo cuando el select de
+        // "Vincular Factura" del formulario llega vacío por no haberse re-seleccionado.
         $stmt = $this->db->prepare(
             'UPDATE egresos
-             SET id_categoria = ?, id_factura = ?, fecha_egreso = ?, monto = ?, beneficiario = ?, descripcion = ?, observaciones = ?
+             SET id_categoria = ?, fecha_egreso = ?, monto = ?, beneficiario = ?, descripcion = ?, observaciones = ?
              WHERE id_egreso = ?'
         );
         $stmt->execute([
             $datos['id_categoria'],
-            $datos['id_factura'] ?: null,
             $datos['fecha_egreso'],
             $datos['monto'],
             $datos['beneficiario'],
@@ -168,5 +170,10 @@ class Egreso extends Model {
     public function vincularFactura($idEgreso, $idFactura) {
         $stmt = $this->db->prepare('UPDATE egresos SET id_factura = ? WHERE id_egreso = ?');
         $stmt->execute([$idFactura, $idEgreso]);
+    }
+
+    public function actualizarCamposClave($id, $monto, $fechaEgreso, $beneficiario) {
+        $stmt = $this->db->prepare('UPDATE egresos SET monto = ?, fecha_egreso = ?, beneficiario = ? WHERE id_egreso = ?');
+        $stmt->execute([$monto, $fechaEgreso, $beneficiario, $id]);
     }
 }

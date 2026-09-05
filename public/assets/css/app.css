@@ -4,6 +4,13 @@
     --teal: #0f4c5c;
     --teal-dark: #0c3a46;
     --amber: #d98c22;
+    --green: #2e9e6f;
+    --green-dark: #227355;
+}
+
+html, body {
+    overflow-x: hidden;
+    max-width: 100%;
 }
 
 body {
@@ -114,8 +121,32 @@ body {
     height: 200px;
 }
 
-.chart-box-wide {
-    height: 160px;
+.chart-box-comparativo {
+    height: 100px;
+}
+
+.descripcion-bitacora div {
+    padding: 1px 0;
+}
+
+.descripcion-bitacora div:not(:last-child) {
+    border-bottom: 1px dashed #e5e5e5;
+    margin-bottom: 2px;
+}
+
+.card-total-suave {
+    background: #e9f4f3;
+    border: 1px solid #d3e9e7;
+}
+
+.card-disponible {
+    background: linear-gradient(90deg, var(--green-dark), var(--green));
+    color: #fff;
+    border: none;
+}
+
+.card-disponible .bi {
+    margin-right: .35rem;
 }
 
 .text-teal-dark {
@@ -154,4 +185,80 @@ body {
 .app-content {
     flex-grow: 1;
     padding: 1.75rem;
+    min-width: 0;
+}
+
+/* Menú móvil */
+.sidebar-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    color: #fff;
+    font-size: 1.35rem;
+    line-height: 1;
+    padding: 0 .25rem;
+}
+
+.sidebar-backdrop {
+    display: none;
+    position: fixed;
+    inset: 56px 0 0 0;
+    background: rgba(0, 0, 0, .45);
+    z-index: 1030;
+}
+
+@media (max-width: 767.98px) {
+    .sidebar-toggle {
+        display: inline-block;
+    }
+
+    .topbar-title {
+        display: none;
+    }
+
+    .topbar-user {
+        display: none;
+    }
+
+    .app-body {
+        display: block;
+    }
+
+    .sidebar {
+        position: fixed;
+        top: 56px;
+        bottom: 0;
+        left: 0;
+        width: 250px;
+        max-width: 80vw;
+        z-index: 1040;
+        transform: translateX(-100%);
+        transition: transform .2s ease;
+        overflow-y: auto;
+        box-shadow: 4px 0 16px rgba(0, 0, 0, .3);
+    }
+
+    body.sidebar-open .sidebar {
+        transform: translateX(0);
+    }
+
+    body.sidebar-open .sidebar-backdrop {
+        display: block;
+    }
+
+    .app-content {
+        padding: 1rem;
+        width: 100%;
+    }
+}
+
+@media (max-width: 575.98px) {
+    .card-disponible .h4,
+    .card-disponible .h5 {
+        font-size: 1.15rem;
+    }
+
+    .app-content h1 {
+        font-size: 1.25rem;
+    }
 }

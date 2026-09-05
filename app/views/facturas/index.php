@@ -11,6 +11,12 @@ $etiquetasTipo = [
     'nota_credito' => 'Nota de Crédito',
 ];
 
+$etiquetasOrigen = [
+    'ingreso' => 'Ingresos',
+    'egreso' => 'Egresos',
+    'sin_vincular' => 'Sin vincular',
+];
+
 $construirQuery = function (array $filtros, $pagina) {
     return http_build_query([
         'c' => 'facturas',
@@ -19,6 +25,7 @@ $construirQuery = function (array $filtros, $pagina) {
         'tipo' => $filtros['tipo_documento'],
         'desde' => $filtros['desde'],
         'hasta' => $filtros['hasta'],
+        'origen' => $filtros['origen'],
         'pagina' => $pagina,
     ]);
 };
@@ -46,7 +53,7 @@ $construirQuery = function (array $filtros, $pagina) {
             <input type="hidden" name="c" value="facturas">
             <input type="hidden" name="a" value="index">
 
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <label class="form-label small text-muted">Buscar</label>
                 <input type="text" name="buscar" class="form-control" placeholder="Nº documento o beneficiario" value="<?= htmlspecialchars($filtros['buscar']) ?>">
             </div>
@@ -60,6 +67,15 @@ $construirQuery = function (array $filtros, $pagina) {
                 </select>
             </div>
             <div class="col-md-2">
+                <label class="form-label small text-muted">Vinculado a</label>
+                <select name="origen" class="form-select">
+                    <option value="">Todos</option>
+                    <?php foreach ($etiquetasOrigen as $valor => $etiqueta): ?>
+                        <option value="<?= $valor ?>" <?= $filtros['origen'] === $valor ? 'selected' : '' ?>><?= $etiqueta ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+            <div class="col-md-2">
                 <label class="form-label small text-muted">Desde</label>
                 <input type="date" name="desde" class="form-control" value="<?= htmlspecialchars($filtros['desde']) ?>">
             </div>
@@ -67,8 +83,8 @@ $construirQuery = function (array $filtros, $pagina) {
                 <label class="form-label small text-muted">Hasta</label>
                 <input type="date" name="hasta" class="form-control" value="<?= htmlspecialchars($filtros['hasta']) ?>">
             </div>
-            <div class="col-md-2">
-                <button type="submit" class="btn btn-teal w-100"><i class="bi bi-funnel"></i> Filtrar</button>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-teal w-100" title="Filtrar"><i class="bi bi-funnel"></i></button>
             </div>
         </form>
     </div>
@@ -81,7 +97,7 @@ $construirQuery = function (array $filtros, $pagina) {
                 <tr>
                     <th>Nº Documento</th>
                     <th>Tipo</th>
-                    <th>Beneficiario</th>
+                    <th>Beneficiario / Aportante</th>
                     <th>Fecha Emisión</th>
                     <th class="text-end">Monto</th>
                     <th>Vinculado a</th>
@@ -106,6 +122,8 @@ $construirQuery = function (array $filtros, $pagina) {
                         <td>
                             <?php if ($fila['egreso_vinculado_id']): ?>
                                 <span class="badge text-bg-light border">Egreso #<?= $fila['egreso_vinculado_id'] ?></span>
+                            <?php elseif ($fila['ingreso_vinculado_id']): ?>
+                                <span class="badge text-bg-light border">Ingreso #<?= $fila['ingreso_vinculado_id'] ?></span>
                             <?php else: ?>
                                 <span class="text-muted">— Sin vincular</span>
                             <?php endif; ?>
@@ -133,7 +151,15 @@ $construirQuery = function (array $filtros, $pagina) {
                                     method="post"
                                     action="index.php?c=facturas&a=anular"
                                     class="d-inline"
-                                    onsubmit="return confirm('¿Anular este documento?');"
+                                    onsubmit="return confirm(<?php
+                                        if ($fila['egreso_vinculado_id']) {
+                                            echo "'¿Anular este documento? También se anulará el Egreso #{$fila['egreso_vinculado_id']} vinculado.'";
+                                        } elseif ($fila['ingreso_vinculado_id']) {
+                                            echo "'¿Anular este documento? También se anulará el Ingreso #{$fila['ingreso_vinculado_id']} vinculado.'";
+                                        } else {
+                                            echo "'¿Anular este documento?'";
+                                        }
+                                    ?>);"
                                 >
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                                     <input type="hidden" name="id" value="<?= $fila['id_factura'] ?>">

@@ -20,6 +20,7 @@ $menuSidebar = [
         'titulo' => 'GESTIÓN',
         'items' => [
             ['key' => 'categorias', 'label' => 'Categorías', 'icon' => 'bi-tags', 'href' => 'index.php?c=categorias&a=index'],
+            ['key' => 'aportantes', 'label' => 'Aportantes', 'icon' => 'bi-person-badge', 'href' => 'index.php?c=aportantes&a=index'],
             ['key' => 'usuarios', 'label' => 'Usuarios y Roles', 'icon' => 'bi-people', 'href' => 'index.php?c=usuarios&a=index'],
         ],
     ],

@@ -4,11 +4,13 @@ require_once __DIR__ . '/../../core/Model.php';
 class Ingreso extends Model {
     public function buscarPorId($id) {
         $stmt = $this->db->prepare(
-            'SELECT i.*, c.nombre AS categoria_nombre, t.nombre AS tipo_nombre, a.nombre_completo AS aportante_nombre
+            'SELECT i.*, c.nombre AS categoria_nombre, t.nombre AS tipo_nombre, a.nombre_completo AS aportante_nombre,
+                f.numero_documento AS factura_numero
              FROM ingresos i
              INNER JOIN categorias c ON c.id_categoria = i.id_categoria
              INNER JOIN tipos_ingreso t ON t.id_tipo_ingreso = i.id_tipo_ingreso
              LEFT JOIN aportantes a ON a.id_aportante = i.id_aportante
+             LEFT JOIN facturas f ON f.id_factura = i.id_factura
              WHERE i.id_ingreso = ?
              LIMIT 1'
         );
@@ -26,11 +28,13 @@ class Ingreso extends Model {
 
         $stmt = $this->db->prepare(
             "SELECT i.*, c.nombre AS categoria_nombre, t.nombre AS tipo_nombre, a.nombre_completo AS aportante_nombre,
-                (SELECT COUNT(*) FROM adjuntos ad WHERE ad.tabla_origen = 'ingresos' AND ad.id_origen = i.id_ingreso) AS tiene_comprobante
+                f.numero_documento AS factura_numero,
+                (SELECT COUNT(*) FROM adjuntos ad WHERE ad.tabla_origen = 'ingresos' AND ad.id_origen = i.id_ingreso) AS tiene_adjunto_legado
              FROM ingresos i
              INNER JOIN categorias c ON c.id_categoria = i.id_categoria
              INNER JOIN tipos_ingreso t ON t.id_tipo_ingreso = i.id_tipo_ingreso
              LEFT JOIN aportantes a ON a.id_aportante = i.id_aportante
+             LEFT JOIN facturas f ON f.id_factura = i.id_factura
              $where
              ORDER BY i.fecha_ingreso DESC, i.id_ingreso DESC
              LIMIT $porPagina OFFSET $offset"
@@ -119,7 +123,7 @@ class Ingreso extends Model {
     public function crear(array $datos) {
         $stmt = $this->db->prepare(
             'INSERT INTO ingresos
-                (id_categoria, id_tipo_ingreso, id_aportante, id_actividad, id_usuario_registro,
+                (id_categoria, id_tipo_ingreso, id_aportante, id_factura, id_usuario_registro,
                  fecha_ingreso, monto, descripcion, observaciones, activo)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 1)'
         );
@@ -127,7 +131,7 @@ class Ingreso extends Model {
             $datos['id_categoria'],
             $datos['id_tipo_ingreso'],
             $datos['id_aportante'] ?: null,
-            $datos['id_actividad'] ?: null,
+            $datos['id_factura'] ?: null,
             $datos['id_usuario_registro'],
             $datos['fecha_ingreso'],
             $datos['monto'],
@@ -141,7 +145,7 @@ class Ingreso extends Model {
     public function actualizar($id, array $datos) {
         $stmt = $this->db->prepare(
             'UPDATE ingresos
-             SET id_categoria = ?, id_tipo_ingreso = ?, id_aportante = ?, id_actividad = ?,
+             SET id_categoria = ?, id_tipo_ingreso = ?, id_aportante = ?,
                  fecha_ingreso = ?, monto = ?, descripcion = ?, observaciones = ?
              WHERE id_ingreso = ?'
         );
@@ -149,7 +153,6 @@ class Ingreso extends Model {
             $datos['id_categoria'],
             $datos['id_tipo_ingreso'],
             $datos['id_aportante'] ?: null,
-            $datos['id_actividad'] ?: null,
             $datos['fecha_ingreso'],
             $datos['monto'],
             $datos['descripcion'] ?: null,
@@ -161,5 +164,27 @@ class Ingreso extends Model {
     public function cambiarEstado($id, $activo) {
         $stmt = $this->db->prepare('UPDATE ingresos SET activo = ? WHERE id_ingreso = ?');
         $stmt->execute([$activo, $id]);
+    }
+
+    public function vincularFactura($id, $idFactura) {
+        $stmt = $this->db->prepare('UPDATE ingresos SET id_factura = ? WHERE id_ingreso = ?');
+        $stmt->execute([$idFactura, $id]);
+    }
+
+    public function actualizarCamposClave($id, $monto, $fechaIngreso) {
+        $stmt = $this->db->prepare('UPDATE ingresos SET monto = ?, fecha_ingreso = ? WHERE id_ingreso = ?');
+        $stmt->execute([$monto, $fechaIngreso, $id]);
+    }
+
+    public function listarParaVincular() {
+        $stmt = $this->db->query(
+            "SELECT i.id_ingreso, i.fecha_ingreso, i.monto, i.id_factura, a.nombre_completo AS aportante_nombre
+             FROM ingresos i
+             LEFT JOIN aportantes a ON a.id_aportante = i.id_aportante
+             WHERE i.activo = 1
+             ORDER BY i.fecha_ingreso DESC"
+        );
+
+        return $stmt->fetchAll();
     }
 }

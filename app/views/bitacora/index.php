@@ -11,8 +11,27 @@ $claseBadgeAccion = function ($accion) {
         'Login' => 'text-bg-primary',
         'Login fallido' => 'text-bg-danger',
         'Exportar' => 'text-bg-info',
+        'Consultar' => 'text-bg-secondary',
         default => 'text-bg-secondary',
     };
+};
+
+// Las descripciones se guardan como segmentos unidos por " — " (ej. "Diezmo — Q 1,200.00 — Hno. Pedro Castillo").
+// En vez de mostrarlas como una sola oración con guiones, se separan visualmente en líneas independientes.
+$renderDescripcion = function ($descripcion) {
+    $segmentos = array_filter(array_map('trim', explode('—', (string) $descripcion)));
+
+    if (count($segmentos) <= 1) {
+        return htmlspecialchars($descripcion);
+    }
+
+    $html = '<div class="descripcion-bitacora">';
+    foreach ($segmentos as $segmento) {
+        $html .= '<div>' . htmlspecialchars($segmento) . '</div>';
+    }
+    $html .= '</div>';
+
+    return $html;
 };
 
 $construirQuery = function (array $filtros, $pagina) {
@@ -40,8 +59,8 @@ $queryExport = http_build_query([
 
 <div class="d-flex justify-content-between align-items-center mb-1">
     <h1 class="h4 mb-1">Bitácora de Auditoría</h1>
-    <a href="index.php?a=exportarCsv&<?= $queryExport ?>" class="btn btn-warning text-dark fw-semibold">
-        <i class="bi bi-download"></i> Exportar Bitácora
+    <a href="index.php?a=exportarPdf&<?= $queryExport ?>" class="btn btn-warning text-dark fw-semibold">
+        <i class="bi bi-file-earmark-pdf"></i> Exportar Bitácora
     </a>
 </div>
 <p class="text-muted mb-3">Registro histórico de todas las acciones realizadas en el sistema</p>
@@ -109,12 +128,11 @@ $queryExport = http_build_query([
                     <th>Módulo</th>
                     <th>Acción</th>
                     <th>Descripción</th>
-                    <th>IP Origen</th>
                 </tr>
             </thead>
             <tbody>
                 <?php if (empty($eventos)): ?>
-                    <tr><td colspan="6" class="text-center text-muted py-4">No hay eventos registrados.</td></tr>
+                    <tr><td colspan="5" class="text-center text-muted py-4">No hay eventos registrados.</td></tr>
                 <?php endif; ?>
 
                 <?php foreach ($eventos as $evento): ?>
@@ -123,8 +141,7 @@ $queryExport = http_build_query([
                         <td><?= htmlspecialchars($evento['nombre_usuario']) ?></td>
                         <td><?= htmlspecialchars($evento['modulo']) ?></td>
                         <td><span class="badge <?= $claseBadgeAccion($evento['accion']) ?>"><?= htmlspecialchars($evento['accion']) ?></span></td>
-                        <td class="text-muted small"><?= htmlspecialchars($evento['descripcion']) ?></td>
-                        <td class="text-muted small"><?= htmlspecialchars($evento['ip_origen']) ?></td>
+                        <td class="text-muted small"><?= $renderDescripcion($evento['descripcion']) ?></td>
                     </tr>
                 <?php endforeach; ?>
             </tbody>

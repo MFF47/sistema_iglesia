@@ -26,15 +26,30 @@ $badgeVariacion = function ($variacion) {
     </div>
 </div>
 
-<form method="get" action="index.php" class="d-flex align-items-end gap-2 my-3">
+<?php
+$nombresMeses = [
+    1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril', 5 => 'Mayo', 6 => 'Junio',
+    7 => 'Julio', 8 => 'Agosto', 9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
+];
+$anioActual = (int) date('Y');
+?>
+<form method="get" action="index.php" class="d-flex flex-wrap align-items-end gap-2 my-3">
     <input type="hidden" name="c" value="home">
     <input type="hidden" name="a" value="index">
     <div>
-        <label class="form-label small text-muted mb-1">Período</label>
-        <select name="periodo" class="form-select" onchange="this.form.submit()">
-            <option value="mes_actual" <?= $periodo === 'mes_actual' ? 'selected' : '' ?>>Mes actual</option>
-            <option value="mes_anterior" <?= $periodo === 'mes_anterior' ? 'selected' : '' ?>>Mes anterior</option>
-            <option value="anio_actual" <?= $periodo === 'anio_actual' ? 'selected' : '' ?>>Año actual</option>
+        <label class="form-label small text-muted mb-1">Mes</label>
+        <select name="mes" class="form-select" onchange="this.form.submit()">
+            <?php foreach ($nombresMeses as $num => $nombre): ?>
+                <option value="<?= $num ?>" <?= $mes === $num ? 'selected' : '' ?>><?= $nombre ?></option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div>
+        <label class="form-label small text-muted mb-1">Año</label>
+        <select name="anio" class="form-select" onchange="this.form.submit()">
+            <?php for ($a = $anioActual - 4; $a <= $anioActual + 1; $a++): ?>
+                <option value="<?= $a ?>" <?= $anio === $a ? 'selected' : '' ?>><?= $a ?></option>
+            <?php endfor; ?>
         </select>
     </div>
     <button type="submit" class="btn btn-teal"><i class="bi bi-arrow-clockwise"></i> Actualizar</button>
@@ -62,9 +77,9 @@ $badgeVariacion = function ($variacion) {
     <div class="col-md-3">
         <div class="card h-100">
             <div class="card-body">
-                <p class="text-muted small mb-1">Balance del Período</p>
-                <p class="h4 mb-1 <?= $kpis['balance'] >= 0 ? 'text-success' : 'text-danger' ?>"><?= $fmtQ($kpis['balance']) ?></p>
-                <span class="small text-muted"><?= $kpis['balance'] >= 0 ? 'Superávit' : 'Déficit' ?></span>
+                <p class="text-muted small mb-1">Disponible Caja General</p>
+                <p class="h4 mb-1 <?= $disponibleCajaGeneral >= 0 ? 'text-success' : 'text-danger' ?>"><?= $fmtQ($disponibleCajaGeneral) ?></p>
+                <span class="small text-muted">Acumulado histórico</span>
             </div>
         </div>
     </div>
@@ -109,19 +124,31 @@ $badgeVariacion = function ($variacion) {
 <div class="card mb-3">
     <div class="card-body">
         <h2 class="h6 mb-3">Comparativo Mensual del Año (Balance)</h2>
-        <div class="chart-box chart-box-wide">
+        <div class="chart-box chart-box-comparativo">
             <canvas id="chartComparativo"></canvas>
         </div>
     </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <script>
 (function () {
     const colorTeal = '#0f4c5c';
     const colorAmber = '#d98c22';
     const colorRed = '#c0392b';
     const colorGreen = '#2e9e6f';
+
+    Chart.register(ChartDataLabels);
+    Chart.defaults.set('plugins.datalabels', { display: false });
+
+    const fmtQCorto = function (valor) {
+        const num = Number(valor) || 0;
+        if (Math.abs(num) >= 1000) {
+            return 'Q' + (num / 1000).toLocaleString('es-GT', { maximumFractionDigits: 1 }) + 'K';
+        }
+        return 'Q' + num.toLocaleString('es-GT', { maximumFractionDigits: 0 });
+    };
 
     new Chart(document.getElementById('chartIngresosEgresos'), {
         type: 'bar',
@@ -143,25 +170,73 @@ $badgeVariacion = function ($variacion) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } },
+            layout: { padding: { top: 18 } },
+            plugins: {
+                legend: { position: 'bottom' },
+                datalabels: {
+                    display: true,
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#495057',
+                    font: { size: 10, weight: '600' },
+                    formatter: function (valor) { return valor > 0 ? fmtQCorto(valor) : null; },
+                },
+            },
             scales: { y: { beginAtZero: true } },
         },
     });
 
     <?php if (!empty($distribucionIngresos)): ?>
+    const datosDistribucion = <?= json_encode(array_map('floatval', array_column($distribucionIngresos, 'total'))) ?>;
+    const totalDistribucion = datosDistribucion.reduce(function (a, b) { return a + b; }, 0);
+
+    const pluginTotalCentro = {
+        id: 'totalCentro',
+        afterDraw: function (chart) {
+            const ctx = chart.ctx;
+            const area = chart.chartArea;
+            const cx = (area.left + area.right) / 2;
+            const cy = (area.top + area.bottom) / 2;
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#6c757d';
+            ctx.font = '11px "Segoe UI", sans-serif';
+            ctx.fillText('Total', cx, cy - 10);
+            ctx.fillStyle = '#16324a';
+            ctx.font = 'bold 15px "Segoe UI", sans-serif';
+            ctx.fillText(fmtQCorto(totalDistribucion), cx, cy + 9);
+            ctx.restore();
+        },
+    };
+
     new Chart(document.getElementById('chartDistribucion'), {
         type: 'doughnut',
         data: {
             labels: <?= json_encode(array_column($distribucionIngresos, 'nombre')) ?>,
             datasets: [{
-                data: <?= json_encode(array_map('floatval', array_column($distribucionIngresos, 'total'))) ?>,
+                data: datosDistribucion,
                 backgroundColor: [colorTeal, colorAmber, colorGreen, colorRed, '#7c92a3'],
             }],
         },
+        plugins: [pluginTotalCentro],
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { position: 'bottom' } },
+            cutout: '62%',
+            plugins: {
+                legend: { position: 'bottom' },
+                datalabels: {
+                    display: true,
+                    color: '#fff',
+                    font: { size: 11, weight: '700' },
+                    formatter: function (valor) {
+                        if (!totalDistribucion) { return ''; }
+                        const pct = (valor / totalDistribucion) * 100;
+                        return pct >= 5 ? pct.toFixed(0) + '%' : '';
+                    },
+                },
+            },
         },
     });
     <?php endif; ?>
@@ -179,7 +254,18 @@ $badgeVariacion = function ($variacion) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
+            layout: { padding: { top: 18 } },
+            plugins: {
+                legend: { display: false },
+                datalabels: {
+                    display: true,
+                    anchor: 'end',
+                    align: 'top',
+                    color: '#495057',
+                    font: { size: 9, weight: '600' },
+                    formatter: function (valor) { return valor !== 0 ? fmtQCorto(valor) : null; },
+                },
+            },
             scales: { y: { beginAtZero: true } },
         },
     });

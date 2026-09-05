@@ -4,6 +4,13 @@ $activeMenu = 'reporteria';
 require __DIR__ . '/../layout/header.php';
 
 $fmtQ = fn($monto) => 'Q' . number_format((float) $monto, 2);
+
+$etiquetasTipo = [
+    'ingresos' => 'Reporte de Ingresos',
+    'egresos' => 'Reporte de Egresos',
+    'consolidado' => 'Reporte Consolidado (Ingresos y Egresos)',
+];
+
 $queryExport = http_build_query([
     'c' => 'reporteria',
     'tipo' => $filtros['tipo'],
@@ -27,12 +34,13 @@ $queryExport = http_build_query([
             <div class="col-md-3">
                 <label class="form-label">Tipo de Reporte <span class="text-danger">*</span></label>
                 <select id="tipo" name="tipo" class="form-select">
-                    <option value="ingresos" <?= $filtros['tipo'] === 'ingresos' ? 'selected' : '' ?>>Reporte de Ingresos</option>
-                    <option value="egresos" <?= $filtros['tipo'] === 'egresos' ? 'selected' : '' ?>>Reporte de Egresos</option>
+                    <?php foreach ($etiquetasTipo as $valor => $etiqueta): ?>
+                        <option value="<?= $valor ?>" <?= $filtros['tipo'] === $valor ? 'selected' : '' ?>><?= $etiqueta ?></option>
+                    <?php endforeach; ?>
                 </select>
             </div>
 
-            <div class="col-md-3">
+            <div class="col-md-3" id="grupo-categoria">
                 <label class="form-label">Categoría</label>
                 <select id="categoria" name="categoria" class="form-select">
                     <option value="">Todas</option>
@@ -64,53 +72,93 @@ $queryExport = http_build_query([
                 <div>
                     <h2 class="h6 mb-1">Vista Previa del Reporte</h2>
                     <p class="text-muted small mb-0">
-                        Reporte: <?= $filtros['tipo'] === 'egresos' ? 'Egresos' : 'Ingresos' ?> ·
+                        Reporte: <?= $etiquetasTipo[$filtros['tipo']] ?> ·
                         Período: <?= htmlspecialchars($filtros['desde']) ?> al <?= htmlspecialchars($filtros['hasta']) ?> ·
                         Generado: <?= $resultado['generado'] ?>
                     </p>
                 </div>
                 <div class="d-flex gap-2">
-                    <a href="index.php?c=reporteria&a=exportarCsv&<?= $queryExport ?>" class="btn btn-warning text-dark btn-sm">
+                    <a href="index.php?c=reporteria&a=exportarExcel&<?= $queryExport ?>" class="btn btn-warning text-dark btn-sm">
                         <i class="bi bi-file-earmark-excel"></i> Exportar Excel
                     </a>
-                    <a href="index.php?c=reporteria&a=exportarPdf&<?= $queryExport ?>" target="_blank" class="btn btn-warning text-dark btn-sm">
+                    <a href="index.php?c=reporteria&a=exportarPdf&<?= $queryExport ?>" class="btn btn-warning text-dark btn-sm">
                         <i class="bi bi-file-earmark-pdf"></i> Exportar PDF
                     </a>
                 </div>
             </div>
 
-            <div class="row g-3 mb-3">
-                <div class="col-md-4">
-                    <div class="card bg-light border-0 h-100">
-                        <div class="card-body">
-                            <p class="text-muted small mb-1">Total Período</p>
-                            <p class="h5 mb-0 text-teal-dark"><?= $fmtQ($resultado['total']) ?></p>
+            <?php if ($filtros['tipo'] === 'consolidado'): ?>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-3">
+                        <div class="card card-total-suave h-100">
+                            <div class="card-body">
+                                <p class="text-muted small mb-1">Total Ingresos</p>
+                                <p class="h5 mb-0 text-teal-dark"><?= $fmtQ($resultado['total_ingresos']) ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-total-suave h-100">
+                            <div class="card-body">
+                                <p class="text-muted small mb-1">Total Egresos</p>
+                                <p class="h5 mb-0 text-teal-dark"><?= $fmtQ($resultado['total_egresos']) ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card card-total-suave h-100">
+                            <div class="card-body">
+                                <p class="text-muted small mb-1">Balance</p>
+                                <p class="h5 mb-0 <?= $resultado['total'] >= 0 ? 'text-success' : 'text-danger' ?>"><?= $fmtQ($resultado['total']) ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card bg-light border-0 h-100">
+                            <div class="card-body">
+                                <p class="text-muted small mb-1">Registros</p>
+                                <p class="h5 mb-0"><?= $resultado['cantidad'] ?></p>
+                                <span class="small text-muted"><?= $resultado['cantidad_ingresos'] ?> ingresos · <?= $resultado['cantidad_egresos'] ?> egresos</span>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card bg-light border-0 h-100">
-                        <div class="card-body">
-                            <p class="text-muted small mb-1">Registros</p>
-                            <p class="h5 mb-0"><?= $resultado['cantidad'] ?></p>
+            <?php else: ?>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-4">
+                        <div class="card card-total-suave h-100">
+                            <div class="card-body">
+                                <p class="text-muted small mb-1">Total Período</p>
+                                <p class="h5 mb-0 text-teal-dark"><?= $fmtQ($resultado['total']) ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light border-0 h-100">
+                            <div class="card-body">
+                                <p class="text-muted small mb-1">Registros</p>
+                                <p class="h5 mb-0"><?= $resultado['cantidad'] ?></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light border-0 h-100">
+                            <div class="card-body">
+                                <p class="text-muted small mb-1">Promedio</p>
+                                <p class="h5 mb-0"><?= $fmtQ($resultado['promedio']) ?></p>
+                            </div>
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
-                    <div class="card bg-light border-0 h-100">
-                        <div class="card-body">
-                            <p class="text-muted small mb-1">Promedio</p>
-                            <p class="h5 mb-0"><?= $fmtQ($resultado['promedio']) ?></p>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <?php endif; ?>
 
             <div class="table-responsive">
                 <table class="table table-sm table-hover align-middle">
                     <thead class="table-dark">
                         <?php if ($filtros['tipo'] === 'egresos'): ?>
                             <tr><th>Fecha</th><th>Categoría</th><th>Beneficiario</th><th>Descripción</th><th class="text-end">Monto</th></tr>
+                        <?php elseif ($filtros['tipo'] === 'consolidado'): ?>
+                            <tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Detalle</th><th class="text-end">Monto</th></tr>
                         <?php else: ?>
                             <tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Aportante</th><th class="text-end">Monto</th></tr>
                         <?php endif; ?>
@@ -129,6 +177,18 @@ $queryExport = http_build_query([
                                     <td class="text-muted"><?= htmlspecialchars($fila['descripcion']) ?></td>
                                     <td class="text-end"><?= $fmtQ($fila['monto']) ?></td>
                                 </tr>
+                            <?php elseif ($filtros['tipo'] === 'consolidado'): ?>
+                                <tr>
+                                    <td><?= htmlspecialchars($fila['fecha']) ?></td>
+                                    <td>
+                                        <span class="badge <?= $fila['tipo_movimiento'] === 'Ingreso' ? 'text-bg-success' : 'text-bg-danger' ?>">
+                                            <?= htmlspecialchars($fila['tipo_movimiento']) ?>
+                                        </span>
+                                    </td>
+                                    <td><?= htmlspecialchars($fila['categoria_nombre']) ?></td>
+                                    <td><?= htmlspecialchars($fila['detalle']) ?></td>
+                                    <td class="text-end"><?= $fmtQ($fila['monto']) ?></td>
+                                </tr>
                             <?php else: ?>
                                 <tr>
                                     <td><?= htmlspecialchars($fila['fecha_ingreso']) ?></td>
@@ -141,10 +201,25 @@ $queryExport = http_build_query([
                         <?php endforeach; ?>
                     </tbody>
                     <tfoot>
-                        <tr class="table-light fw-semibold">
-                            <td colspan="4" class="text-end">TOTAL DEL PERÍODO:</td>
-                            <td class="text-end"><?= $fmtQ($resultado['total']) ?></td>
-                        </tr>
+                        <?php if ($filtros['tipo'] === 'consolidado'): ?>
+                            <tr class="table-light fw-semibold">
+                                <td colspan="4" class="text-end">TOTAL INGRESOS:</td>
+                                <td class="text-end"><?= $fmtQ($resultado['total_ingresos']) ?></td>
+                            </tr>
+                            <tr class="table-light fw-semibold">
+                                <td colspan="4" class="text-end">TOTAL EGRESOS:</td>
+                                <td class="text-end"><?= $fmtQ($resultado['total_egresos']) ?></td>
+                            </tr>
+                            <tr class="table-warning fw-semibold">
+                                <td colspan="4" class="text-end">BALANCE:</td>
+                                <td class="text-end"><?= $fmtQ($resultado['total']) ?></td>
+                            </tr>
+                        <?php else: ?>
+                            <tr class="table-light fw-semibold">
+                                <td colspan="4" class="text-end">TOTAL DEL PERÍODO:</td>
+                                <td class="text-end"><?= $fmtQ($resultado['total']) ?></td>
+                            </tr>
+                        <?php endif; ?>
                     </tfoot>
                 </table>
             </div>
@@ -158,9 +233,17 @@ $queryExport = http_build_query([
     const categoriasEgreso = <?= json_encode($categoriasEgreso) ?>;
     const selectTipo = document.getElementById('tipo');
     const selectCategoria = document.getElementById('categoria');
+    const grupoCategoria = document.getElementById('grupo-categoria');
     const categoriaSeleccionada = '<?= htmlspecialchars($filtros['categoria']) ?>';
 
     function cargarCategorias() {
+        if (selectTipo.value === 'consolidado') {
+            grupoCategoria.style.display = 'none';
+            selectCategoria.value = '';
+            return;
+        }
+
+        grupoCategoria.style.display = '';
         const lista = selectTipo.value === 'egresos' ? categoriasEgreso : categoriasIngreso;
         selectCategoria.innerHTML = '<option value="">Todas</option>';
         lista.forEach(function (cat) {

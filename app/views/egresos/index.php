@@ -26,7 +26,7 @@ $construirQuery = function (array $filtros, $pagina) {
         </a>
     <?php endif; ?>
 </div>
-<p class="text-muted mb-4">Registro de gastos operativos, proyectos y mantenimiento</p>
+<p class="text-muted mb-4">Registro de gastos operativos, proyectos y mantenimiento — <?= htmlspecialchars($mesActualNombre) ?></p>
 
 <?php if ($flash): ?>
     <div class="alert alert-<?= htmlspecialchars($flash['tipo'] === 'success' ? 'success' : 'danger') ?>">
@@ -34,11 +34,18 @@ $construirQuery = function (array $filtros, $pagina) {
     </div>
 <?php endif; ?>
 
+<div class="card card-disponible mb-3">
+    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-safe2"></i> Disponible Caja General</span>
+        <span class="h4 mb-0"><?= $fmtQ($disponibleCajaGeneral) ?></span>
+    </div>
+</div>
+
 <div class="row g-3 mb-3">
     <div class="col-md-4">
         <div class="card h-100">
             <div class="card-body">
-                <p class="text-muted small mb-1">Total del Mes</p>
+                <p class="text-muted small mb-1">Total de <?= htmlspecialchars($mesActualNombre) ?></p>
                 <p class="h4 mb-0 text-teal-dark"><?= $fmtQ($kpis['total']) ?></p>
             </div>
         </div>
@@ -145,7 +152,7 @@ $construirQuery = function (array $filtros, $pagina) {
                                     method="post"
                                     action="index.php?c=egresos&a=anular"
                                     class="d-inline"
-                                    onsubmit="return confirm('¿Anular este egreso? Esta acción no se puede deshacer desde el listado.');"
+                                    onsubmit="return confirm(<?= !empty($fila['factura_numero']) ? "'¿Anular este egreso? También se anulará el documento vinculado (" . htmlspecialchars($fila['factura_numero'], ENT_QUOTES) . ").'" : "'¿Anular este egreso? Esta acción no se puede deshacer desde el listado.'" ?>);"
                                 >
                                     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
                                     <input type="hidden" name="id" value="<?= $fila['id_egreso'] ?>">

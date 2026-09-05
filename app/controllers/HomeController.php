@@ -7,8 +7,10 @@ class HomeController extends Controller {
     public function index() {
         Middleware::requirePermiso('dashboard');
 
-        $periodo = $_GET['periodo'] ?? 'mes_actual';
-        [$desde, $hasta, $desdeAnterior, $hastaAnterior, $etiquetaPeriodo] = $this->rangoPeriodo($periodo);
+        $mes = max(1, min(12, (int) ($_GET['mes'] ?? date('n'))));
+        $anio = max(2000, min(2100, (int) ($_GET['anio'] ?? date('Y'))));
+
+        [$desde, $hasta, $desdeAnterior, $hastaAnterior, $etiquetaPeriodo] = $this->rangoPeriodo($mes, $anio);
 
         $reporteModel = new Reporte();
 
@@ -17,9 +19,11 @@ class HomeController extends Controller {
 
         $this->view('home.index', [
             'usuario' => Auth::user(),
-            'periodo' => $periodo,
+            'mes' => $mes,
+            'anio' => $anio,
             'etiquetaPeriodo' => $etiquetaPeriodo,
             'kpis' => $actual,
+            'disponibleCajaGeneral' => $reporteModel->disponibleCajaGeneral(),
             'variacionIngresos' => $this->variacion($actual['total_ingresos'], $anterior['total_ingresos']),
             'variacionEgresos' => $this->variacion($actual['total_egresos'], $anterior['total_egresos']),
             'serieMensual' => $reporteModel->serieMensual(6),
@@ -28,29 +32,12 @@ class HomeController extends Controller {
         ]);
     }
 
-    private function rangoPeriodo($periodo) {
-        $hoy = new DateTime();
-
-        if ($periodo === 'mes_anterior') {
-            $inicio = new DateTime('first day of last month');
-            $fin = new DateTime('last day of last month');
-            $inicioAnterior = (clone $inicio)->modify('-1 month');
-            $finAnterior = (clone $fin)->modify('-1 month');
-            $etiqueta = 'Mes anterior — ' . $this->nombreMesAnio($inicio);
-        } elseif ($periodo === 'anio_actual') {
-            $inicio = new DateTime('first day of january this year');
-            $fin = $hoy;
-            $inicioAnterior = (clone $inicio)->modify('-1 year');
-            $finAnterior = (clone $fin)->modify('-1 year');
-            $etiqueta = 'Año ' . $hoy->format('Y');
-        } else {
-            $periodo = 'mes_actual';
-            $inicio = new DateTime('first day of this month');
-            $fin = new DateTime('last day of this month');
-            $inicioAnterior = (clone $inicio)->modify('-1 month');
-            $finAnterior = (clone $fin)->modify('-1 month');
-            $etiqueta = 'Mes actual — ' . $this->nombreMesAnio($inicio);
-        }
+    private function rangoPeriodo($mes, $anio) {
+        $inicio = new DateTime(sprintf('%04d-%02d-01', $anio, $mes));
+        $fin = (clone $inicio)->modify('last day of this month');
+        $inicioAnterior = (clone $inicio)->modify('-1 month');
+        $finAnterior = (clone $inicioAnterior)->modify('last day of this month');
+        $etiqueta = $this->nombreMesAnio($inicio);
 
         return [
             $inicio->format('Y-m-d'),

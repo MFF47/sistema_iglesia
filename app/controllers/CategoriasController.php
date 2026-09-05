@@ -7,7 +7,6 @@ require_once __DIR__ . '/../models/Categoria.php';
 require_once __DIR__ . '/../models/Bitacora.php';
 
 class CategoriasController extends Controller {
-    private const POR_PAGINA = 6;
     private const TIPOS_VALIDOS = ['ingreso', 'egreso'];
 
     public function index() {
@@ -17,22 +16,17 @@ class CategoriasController extends Controller {
 
         $filtros = [
             'buscar' => trim($_GET['buscar'] ?? ''),
-            'tipo' => $_GET['tipo'] ?? '',
             'activo' => $_GET['estado'] ?? '',
         ];
 
-        $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
-        $total = $categoriaModel->contar($filtros);
-        $totalPaginas = max(1, (int) ceil($total / self::POR_PAGINA));
-        $pagina = min($pagina, $totalPaginas);
+        $categoriasIngreso = $categoriaModel->listar(array_merge($filtros, ['tipo' => 'ingreso']), 1, 1000);
+        $categoriasEgreso = $categoriaModel->listar(array_merge($filtros, ['tipo' => 'egreso']), 1, 1000);
 
         $this->view('categorias.index', [
             'usuario' => Auth::user(),
-            'categorias' => $categoriaModel->listar($filtros, $pagina, self::POR_PAGINA),
+            'categoriasIngreso' => $categoriasIngreso,
+            'categoriasEgreso' => $categoriasEgreso,
             'filtros' => $filtros,
-            'pagina' => $pagina,
-            'totalPaginas' => $totalPaginas,
-            'total' => $total,
             'flash' => Flash::get(),
             'csrfToken' => Csrf::token(),
         ]);

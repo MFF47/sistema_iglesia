@@ -8,16 +8,23 @@ $valor = fn($campo) => htmlspecialchars((string) ($valores[$campo] ?? ''));
 $accion = $esEdicion ? 'index.php?c=ingresos&a=update&id=' . $registro['id_ingreso'] : 'index.php?c=ingresos&a=store';
 $idTipoSeleccionado = (string) ($valores['id_tipo_ingreso'] ?? '');
 $idCategoriaSeleccionada = (string) ($valores['id_categoria'] ?? '');
-$idActividadSeleccionada = (string) ($valores['id_actividad'] ?? '');
 $idAportanteSeleccionado = (string) ($valores['id_aportante'] ?? '');
+$facturaVinculada = $esEdicion ? ($registro['factura_numero'] ?? '') : '';
 ?>
 
 <h1 class="h4 mb-1"><?= htmlspecialchars($tituloPagina) ?></h1>
-<p class="text-muted mb-4">
+<p class="text-muted mb-3">
     <?= $esEdicion ? 'Actualice los datos del ingreso.' : 'Registre un nuevo ingreso económico al sistema' ?>
 </p>
 
-<form method="post" action="<?= htmlspecialchars($accion) ?>" enctype="multipart/form-data" novalidate>
+<div class="card card-disponible mb-4">
+    <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+        <span><i class="bi bi-safe2"></i> Disponible Caja General</span>
+        <span class="h5 mb-0">Q<?= number_format((float) $disponibleCajaGeneral, 2) ?></span>
+    </div>
+</div>
+
+<form method="post" action="<?= htmlspecialchars($accion) ?>" enctype="multipart/form-data" novalidate data-factura-vinculada="<?= htmlspecialchars($facturaVinculada) ?>" id="form-ingreso">
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
 
     <div class="card mb-3">
@@ -75,18 +82,6 @@ $idAportanteSeleccionado = (string) ($valores['id_aportante'] ?? '');
                     <?php if (isset($errores['id_categoria'])): ?>
                         <div class="invalid-feedback"><?= htmlspecialchars($errores['id_categoria']) ?></div>
                     <?php endif; ?>
-                </div>
-
-                <div class="col-md-3">
-                    <label class="form-label">Actividad Asociada</label>
-                    <select name="id_actividad" class="form-select">
-                        <option value="">(Ninguna)</option>
-                        <?php foreach ($actividades as $act): ?>
-                            <option value="<?= $act['id_actividad'] ?>" <?= $idActividadSeleccionada === (string) $act['id_actividad'] ? 'selected' : '' ?>>
-                                <?= htmlspecialchars($act['nombre']) ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
                 </div>
 
                 <div class="col-md-3">
@@ -152,11 +147,37 @@ $idAportanteSeleccionado = (string) ($valores['id_aportante'] ?? '');
     <div class="card mb-3">
         <div class="card-body">
             <h2 class="h6 mb-3">Comprobante (opcional)</h2>
-            <p class="text-muted small mb-3">Adjunte una imagen o PDF del comprobante de respaldo (máx. 3 MB).</p>
+            <p class="text-muted small mb-3">
+                Adjunte una foto (puede tomarla directamente con la cámara del dispositivo) o un PDF del comprobante.
+                Se registrará automáticamente en <strong>Facturas y Recibos</strong> (máx. 5 MB).
+            </p>
+
+            <?php if ($facturaVinculada): ?>
+                <div class="alert alert-info py-2 small mb-3">
+                    <i class="bi bi-link-45deg"></i>
+                    Este ingreso ya tiene el documento <strong><?= htmlspecialchars($facturaVinculada) ?></strong> vinculado.
+                    Si sube un archivo nuevo aquí, se creará un documento adicional; si no sube nada, el documento existente
+                    se actualizará con los datos de este ingreso al guardar.
+                </div>
+            <?php endif; ?>
+
+            <div class="row g-2 mb-2">
+                <div class="col-6">
+                    <label for="comprobante_camara" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-camera"></i> Tomar Foto
+                    </label>
+                    <input type="file" id="comprobante_camara" class="d-none" accept="image/*" capture="environment">
+                </div>
+                <div class="col-6">
+                    <label for="comprobante" class="btn btn-outline-secondary w-100">
+                        <i class="bi bi-folder2-open"></i> Elegir Archivo
+                    </label>
+                </div>
+            </div>
 
             <label for="comprobante" class="dropzone d-block mb-0">
                 <i class="bi bi-cloud-arrow-up fs-3 d-block mb-2"></i>
-                <span id="comprobante-texto">Arrastre el archivo aquí o haga clic para seleccionar</span>
+                <span id="comprobante-texto">Arrastre el archivo aquí, tome una foto o haga clic para seleccionar</span>
                 <input type="file" id="comprobante" name="comprobante" class="d-none" accept=".pdf,.jpg,.jpeg,.png">
             </label>
             <p class="text-muted small mt-2 mb-0">Formatos permitidos: PDF, JPG, PNG.</p>
@@ -214,12 +235,20 @@ $idAportanteSeleccionado = (string) ($valores['id_aportante'] ?? '');
     actualizarRequerido();
 
     const inputArchivo = document.getElementById('comprobante');
+    const inputCamara = document.getElementById('comprobante_camara');
     const dropzone = inputArchivo.closest('.dropzone');
     const texto = document.getElementById('comprobante-texto');
 
     inputArchivo.addEventListener('change', function () {
         if (inputArchivo.files.length > 0) {
             texto.textContent = inputArchivo.files[0].name;
+        }
+    });
+
+    inputCamara.addEventListener('change', function () {
+        if (inputCamara.files.length > 0) {
+            inputArchivo.files = inputCamara.files;
+            texto.textContent = inputCamara.files[0].name;
         }
     });
 
@@ -234,6 +263,21 @@ $idAportanteSeleccionado = (string) ($valores['id_aportante'] ?? '');
         if (e.dataTransfer.files.length > 0) {
             inputArchivo.files = e.dataTransfer.files;
             texto.textContent = e.dataTransfer.files[0].name;
+        }
+    });
+
+    const formIngreso = document.getElementById('form-ingreso');
+    const facturaVinculada = formIngreso.dataset.facturaVinculada;
+
+    formIngreso.addEventListener('submit', function (e) {
+        if (facturaVinculada && inputArchivo.files.length === 0) {
+            const continuar = confirm(
+                'Este ingreso tiene el documento "' + facturaVinculada + '" vinculado. ' +
+                'Al guardar, ese documento también se actualizará con los nuevos datos. ¿Desea continuar?'
+            );
+            if (!continuar) {
+                e.preventDefault();
+            }
         }
     });
 

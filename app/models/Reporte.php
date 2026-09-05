@@ -2,6 +2,13 @@
 require_once __DIR__ . '/../../core/Model.php';
 
 class Reporte extends Model {
+    public function disponibleCajaGeneral() {
+        $totalIngresos = (float) $this->db->query('SELECT COALESCE(SUM(monto), 0) FROM ingresos WHERE activo = 1')->fetchColumn();
+        $totalEgresos = (float) $this->db->query('SELECT COALESCE(SUM(monto), 0) FROM egresos WHERE activo = 1')->fetchColumn();
+
+        return $totalIngresos - $totalEgresos;
+    }
+
     public function totalesPeriodo($desde, $hasta) {
         $stmtIngresos = $this->db->prepare(
             'SELECT COALESCE(SUM(monto), 0) AS total, COUNT(*) AS cantidad
@@ -102,5 +109,13 @@ class Reporte extends Model {
     public static function nombreMesCorto($mes) {
         $meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
         return $meses[$mes - 1];
+    }
+
+    public static function nombreMesLargo($mes) {
+        $meses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril', 5 => 'Mayo', 6 => 'Junio',
+            7 => 'Julio', 8 => 'Agosto', 9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre',
+        ];
+        return $meses[(int) $mes];
     }
 }

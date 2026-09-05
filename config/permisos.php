@@ -9,6 +9,7 @@ return [
     'facturas'   => ['Administrador', 'Tesorero', 'Supervisor'],
     'categorias' => ['Administrador'],
     'usuarios'   => ['Administrador'],
+    'aportantes' => ['Administrador'],
     'reporteria' => ['Administrador', 'Tesorero', 'Supervisor', 'Consulta'],
     'bitacora'   => ['Administrador', 'Supervisor'],
 ];

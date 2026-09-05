@@ -15,9 +15,10 @@ class Factura extends Model {
 
     public function buscarPorId($id) {
         $stmt = $this->db->prepare(
-            'SELECT f.*, e.id_egreso AS egreso_vinculado_id
+            'SELECT f.*,
+                (SELECT e.id_egreso FROM egresos e WHERE e.id_factura = f.id_factura LIMIT 1) AS egreso_vinculado_id,
+                (SELECT i.id_ingreso FROM ingresos i WHERE i.id_factura = f.id_factura LIMIT 1) AS ingreso_vinculado_id
              FROM facturas f
-             LEFT JOIN egresos e ON e.id_factura = f.id_factura
              WHERE f.id_factura = ?
              LIMIT 1'
         );
@@ -34,9 +35,10 @@ class Factura extends Model {
         $offset = (int) (max(1, $pagina) - 1) * $porPagina;
 
         $stmt = $this->db->prepare(
-            "SELECT f.*, e.id_egreso AS egreso_vinculado_id
+            "SELECT f.*,
+                (SELECT e.id_egreso FROM egresos e WHERE e.id_factura = f.id_factura LIMIT 1) AS egreso_vinculado_id,
+                (SELECT i.id_ingreso FROM ingresos i WHERE i.id_factura = f.id_factura LIMIT 1) AS ingreso_vinculado_id
              FROM facturas f
-             LEFT JOIN egresos e ON e.id_factura = f.id_factura
              $where
              ORDER BY f.fecha_emision DESC, f.id_factura DESC
              LIMIT $porPagina OFFSET $offset"
@@ -78,6 +80,17 @@ class Factura extends Model {
         if (!empty($filtros['hasta'])) {
             $condiciones[] = 'f.fecha_emision <= ?';
             $params[] = $filtros['hasta'];
+        }
+
+        if (!empty($filtros['origen'])) {
+            if ($filtros['origen'] === 'ingreso') {
+                $condiciones[] = 'EXISTS (SELECT 1 FROM ingresos i WHERE i.id_factura = f.id_factura)';
+            } elseif ($filtros['origen'] === 'egreso') {
+                $condiciones[] = 'EXISTS (SELECT 1 FROM egresos e WHERE e.id_factura = f.id_factura)';
+            } elseif ($filtros['origen'] === 'sin_vincular') {
+                $condiciones[] = 'NOT EXISTS (SELECT 1 FROM ingresos i WHERE i.id_factura = f.id_factura)';
+                $condiciones[] = 'NOT EXISTS (SELECT 1 FROM egresos e WHERE e.id_factura = f.id_factura)';
+            }
         }
 
         $where = 'WHERE ' . implode(' AND ', $condiciones);
@@ -124,6 +137,13 @@ class Factura extends Model {
     public function cambiarEstado($id, $activo) {
         $stmt = $this->db->prepare('UPDATE facturas SET activo = ? WHERE id_factura = ?');
         $stmt->execute([$activo, $id]);
+    }
+
+    public function actualizarCamposClave($id, $monto, $fechaEmision, $beneficiario) {
+        $stmt = $this->db->prepare(
+            'UPDATE facturas SET monto = ?, fecha_emision = ?, beneficiario = ? WHERE id_factura = ?'
+        );
+        $stmt->execute([$monto, $fechaEmision, $beneficiario, $id]);
     }
 
     public function crear(array $datos) {

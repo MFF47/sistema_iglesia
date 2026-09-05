@@ -7,10 +7,14 @@ require_once __DIR__ . '/../models/Egreso.php';
 require_once __DIR__ . '/../models/Categoria.php';
 require_once __DIR__ . '/../models/Factura.php';
 require_once __DIR__ . '/../models/Bitacora.php';
+require_once __DIR__ . '/../models/Reporte.php';
 
 class EgresosController extends Controller {
     private const POR_PAGINA = 10;
     private const ROLES_GESTION = ['Administrador', 'Tesorero'];
+    private const EXTENSIONES_PERMITIDAS = ['pdf', 'jpg', 'jpeg', 'png'];
+    private const TAMANO_MAXIMO = 5 * 1024 * 1024; // 5 MB
+    private const DIR_FACTURAS = __DIR__ . '/../../storage/facturas';
 
     public function index() {
         Middleware::requirePermiso('egresos');
@@ -30,6 +34,8 @@ class EgresosController extends Controller {
         $totalPaginas = max(1, (int) ceil($total / self::POR_PAGINA));
         $pagina = min($pagina, $totalPaginas);
 
+        $reporteModel = new Reporte();
+
         $this->view('egresos.index', [
             'usuario' => Auth::user(),
             'egresos' => $egresoModel->listar($filtros, $pagina, self::POR_PAGINA),
@@ -40,6 +46,8 @@ class EgresosController extends Controller {
             'total' => $total,
             'totalFiltrado' => $egresoModel->totalFiltrado($filtros),
             'kpis' => $egresoModel->kpisMes(),
+            'mesActualNombre' => Reporte::nombreMesLargo((int) date('n')) . ' ' . date('Y'),
+            'disponibleCajaGeneral' => $reporteModel->disponibleCajaGeneral(),
             'puedeGestionar' => in_array(Auth::user()['rol_nombre'], self::ROLES_GESTION, true),
             'flash' => Flash::get(),
             'csrfToken' => Csrf::token(),
@@ -85,6 +93,7 @@ class EgresosController extends Controller {
         }
 
         $egresoModel = new Egreso();
+        $registroAnterior = $id ? $egresoModel->buscarPorId($id) : null;
 
         $valores = [
             'fecha_egreso' => trim($_POST['fecha_egreso'] ?? ''),
@@ -99,7 +108,7 @@ class EgresosController extends Controller {
         $errores = $this->validar($valores);
 
         if (!empty($errores)) {
-            $this->view('egresos.form', $this->datosFormulario($id ? $egresoModel->buscarPorId($id) : null, $valores, $errores));
+            $this->view('egresos.form', $this->datosFormulario($registroAnterior, $valores, $errores));
             return;
         }
 
@@ -122,18 +131,110 @@ class EgresosController extends Controller {
             );
             Flash::set('success', 'Egreso actualizado correctamente.');
         } else {
-            $idCreado = $egresoModel->crear($datos);
+            $id = $egresoModel->crear($datos);
             Bitacora::registrar(
                 'Crear',
                 'Egresos',
-                "Registro de egreso #{$idCreado} — {$valores['beneficiario']} — Q " . number_format((float) $valores['monto'], 2) . " — {$categoriaNombre}",
+                "Registro de egreso #{$id} — {$valores['beneficiario']} — Q " . number_format((float) $valores['monto'], 2) . " — {$categoriaNombre}",
                 'egresos',
-                $idCreado
+                $id
             );
             Flash::set('success', 'Egreso registrado correctamente.');
         }
 
+        [$idFacturaCreada, $errorArchivo] = $this->procesarFacturaAutomatica($id, $valores, $usuario['id_usuario']);
+
+        $idFacturaAnterior = $registroAnterior['id_factura'] ?? null;
+
+        if ($idFacturaCreada) {
+            // Se subió un archivo nuevo: siempre gana sobre cualquier selección manual.
+            $egresoModel->vincularFactura($id, $idFacturaCreada);
+        } elseif (!empty($valores['id_factura']) && (int) $valores['id_factura'] !== (int) $idFacturaAnterior) {
+            // El usuario eligió manualmente una factura distinta en el select.
+            $egresoModel->vincularFactura($id, (int) $valores['id_factura']);
+        } elseif ($idFacturaAnterior && empty($valores['id_factura'])) {
+            // No se subió archivo nuevo ni se cambió la factura vinculada manualmente:
+            // se propaga el cambio de monto/fecha/beneficiario hacia el documento ya vinculado.
+            $facturaModel = new Factura();
+            $facturaModel->actualizarCamposClave(
+                $registroAnterior['id_factura'],
+                $valores['monto'],
+                $valores['fecha_egreso'],
+                $valores['beneficiario']
+            );
+            Bitacora::registrar(
+                'Modificar',
+                'Facturas',
+                "Actualización en cascada del documento {$registroAnterior['factura_numero']} por edición del egreso #{$id}",
+                'facturas',
+                $registroAnterior['id_factura']
+            );
+        }
+
+        if ($errorArchivo) {
+            Flash::set('danger', $errorArchivo);
+        }
+
         $this->redirect('index.php?c=egresos&a=index');
+    }
+
+    /**
+     * Si el usuario adjuntó un archivo (foto o PDF) al registrar/editar el egreso,
+     * lo guarda y crea automáticamente el documento correspondiente en Facturas y Recibos.
+     */
+    private function procesarFacturaAutomatica($idEgreso, array $valores, $idUsuario) {
+        if (empty($_FILES['comprobante']['name'])) {
+            return [null, null];
+        }
+
+        $archivo = $_FILES['comprobante'];
+
+        if ($archivo['error'] !== UPLOAD_ERR_OK) {
+            return [null, 'No se pudo subir el comprobante. Intente nuevamente.'];
+        }
+
+        if ($archivo['size'] > self::TAMANO_MAXIMO) {
+            return [null, 'El comprobante supera el tamaño máximo permitido (5 MB).'];
+        }
+
+        $extension = strtolower(pathinfo($archivo['name'], PATHINFO_EXTENSION));
+
+        if (!in_array($extension, self::EXTENSIONES_PERMITIDAS, true)) {
+            return [null, 'Formato de comprobante no permitido. Use PDF, JPG o PNG.'];
+        }
+
+        if (!is_dir(self::DIR_FACTURAS)) {
+            mkdir(self::DIR_FACTURAS, 0755, true);
+        }
+
+        $nombreAlmacenado = 'factura_' . bin2hex(random_bytes(8)) . '.' . $extension;
+        $rutaDestino = self::DIR_FACTURAS . '/' . $nombreAlmacenado;
+
+        if (!move_uploaded_file($archivo['tmp_name'], $rutaDestino)) {
+            return [null, 'No se pudo guardar el comprobante en el servidor.'];
+        }
+
+        $facturaModel = new Factura();
+        $idFactura = $facturaModel->crear([
+            'numero_documento' => 'EGR-' . $idEgreso,
+            'tipo_documento' => 'recibo',
+            'beneficiario' => $valores['beneficiario'],
+            'fecha_emision' => $valores['fecha_egreso'],
+            'monto' => $valores['monto'],
+            'descripcion' => "Comprobante generado automáticamente desde el egreso #{$idEgreso}",
+            'ruta_archivo' => $nombreAlmacenado,
+            'id_usuario_registro' => $idUsuario,
+        ]);
+
+        Bitacora::registrar(
+            'Crear',
+            'Facturas',
+            "Registro automático de documento (EGR-{$idEgreso}) generado desde Egresos",
+            'facturas',
+            $idFactura
+        );
+
+        return [$idFactura, null];
     }
 
     private function validar(array $valores) {
@@ -176,8 +277,22 @@ class EgresosController extends Controller {
 
         $id = (int) ($_POST['id'] ?? 0);
         $egresoModel = new Egreso();
+        $registro = $egresoModel->buscarPorId($id);
+
         $egresoModel->cambiarEstado($id, 0);
         Bitacora::registrar('Anular', 'Egresos', "Anulación de egreso #{$id}", 'egresos', $id);
+
+        if ($registro && $registro['id_factura']) {
+            $facturaModel = new Factura();
+            $facturaModel->cambiarEstado($registro['id_factura'], 0);
+            Bitacora::registrar(
+                'Anular',
+                'Facturas',
+                "Anulación en cascada del documento {$registro['factura_numero']} por anulación del egreso #{$id}",
+                'facturas',
+                $registro['id_factura']
+            );
+        }
 
         Flash::set('success', 'Egreso anulado correctamente.');
         $this->redirect('index.php?c=egresos&a=index');
@@ -238,6 +353,7 @@ class EgresosController extends Controller {
     private function datosFormulario($registro, array $valoresPost, array $errores) {
         $categoriaModel = new Categoria();
         $facturaModel = new Factura();
+        $reporteModel = new Reporte();
 
         $valores = $registro ?: [];
         if (!empty($valoresPost)) {
@@ -251,6 +367,7 @@ class EgresosController extends Controller {
             'errores' => $errores,
             'categorias' => $categoriaModel->listar(['buscar' => '', 'tipo' => 'egreso', 'activo' => '1'], 1, 100),
             'facturas' => $facturaModel->listarActivas(),
+            'disponibleCajaGeneral' => $reporteModel->disponibleCajaGeneral(),
             'csrfToken' => Csrf::token(),
         ];
     }

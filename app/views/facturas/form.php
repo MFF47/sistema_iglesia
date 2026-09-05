@@ -8,6 +8,11 @@ $valor = fn($campo) => htmlspecialchars((string) ($valores[$campo] ?? ''));
 $accion = $esEdicion ? 'index.php?c=facturas&a=update&id=' . $registro['id_factura'] : 'index.php?c=facturas&a=store';
 $tipoSeleccionado = (string) ($valores['tipo_documento'] ?? '');
 $idEgresoSeleccionado = (string) ($valores['id_egreso_vincular'] ?? ($registro['egreso_vinculado_id'] ?? ''));
+$idIngresoSeleccionado = (string) ($valores['id_ingreso_vincular'] ?? ($registro['ingreso_vinculado_id'] ?? ''));
+$tieneVinculo = $esEdicion && (!empty($registro['egreso_vinculado_id']) || !empty($registro['ingreso_vinculado_id']));
+$etiquetaVinculo = $esEdicion
+    ? (!empty($registro['egreso_vinculado_id']) ? 'Egreso #' . $registro['egreso_vinculado_id'] : (!empty($registro['ingreso_vinculado_id']) ? 'Ingreso #' . $registro['ingreso_vinculado_id'] : ''))
+    : '';
 ?>
 
 <h1 class="h4 mb-1"><?= htmlspecialchars($tituloPagina) ?></h1>
@@ -15,8 +20,23 @@ $idEgresoSeleccionado = (string) ($valores['id_egreso_vincular'] ?? ($registro['
     <?= $esEdicion ? 'Actualice los datos del documento.' : 'Registre un documento de respaldo de movimiento económico' ?>
 </p>
 
-<form method="post" action="<?= htmlspecialchars($accion) ?>" enctype="multipart/form-data" novalidate>
+<form
+    method="post"
+    action="<?= htmlspecialchars($accion) ?>"
+    enctype="multipart/form-data"
+    novalidate
+    id="form-factura"
+    data-vinculo="<?= htmlspecialchars($etiquetaVinculo) ?>"
+>
     <input type="hidden" name="csrf_token" value="<?= htmlspecialchars($csrfToken) ?>">
+
+    <?php if ($tieneVinculo): ?>
+        <div class="alert alert-info py-2 small">
+            <i class="bi bi-link-45deg"></i>
+            Este documento está vinculado a <strong><?= htmlspecialchars($etiquetaVinculo) ?></strong>.
+            Si cambia el monto, la fecha o el beneficiario, ese registro se actualizará automáticamente al guardar.
+        </div>
+    <?php endif; ?>
 
     <div class="card mb-3">
         <div class="card-body">
@@ -82,7 +102,7 @@ $idEgresoSeleccionado = (string) ($valores['id_egreso_vincular'] ?? ($registro['
                 </div>
 
                 <div class="col-md-6">
-                    <label class="form-label">Beneficiario / Emisor <span class="text-danger">*</span></label>
+                    <label class="form-label">Beneficiario / Aportante <span class="text-danger">*</span></label>
                     <input
                         type="text"
                         name="beneficiario"
@@ -140,18 +160,35 @@ $idEgresoSeleccionado = (string) ($valores['id_egreso_vincular'] ?? ($registro['
 
     <div class="card mb-3">
         <div class="card-body">
-            <h2 class="h6 mb-3">Vincular a Egreso (opcional)</h2>
-            <p class="text-muted small mb-3">Asocie esta factura a un egreso existente o regístrelo después.</p>
+            <h2 class="h6 mb-3">Vincular a un Movimiento (opcional)</h2>
+            <p class="text-muted small mb-3">Asocie esta factura a un ingreso o egreso ya registrado.</p>
 
-            <select name="id_egreso_vincular" class="form-select">
-                <option value="">(Sin vincular)</option>
-                <?php foreach ($egresos as $egreso): ?>
-                    <option value="<?= $egreso['id_egreso'] ?>" <?= $idEgresoSeleccionado === (string) $egreso['id_egreso'] ? 'selected' : '' ?>>
-                        Egreso #<?= $egreso['id_egreso'] ?> — <?= htmlspecialchars($egreso['beneficiario']) ?> — Q<?= number_format($egreso['monto'], 2) ?>
-                        <?= $egreso['id_factura'] ? ' (ya tiene factura vinculada)' : '' ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label small text-muted">Egreso Asociado</label>
+                    <select name="id_egreso_vincular" class="form-select">
+                        <option value="">(Sin vincular)</option>
+                        <?php foreach ($egresos as $egreso): ?>
+                            <option value="<?= $egreso['id_egreso'] ?>" <?= $idEgresoSeleccionado === (string) $egreso['id_egreso'] ? 'selected' : '' ?>>
+                                Egreso #<?= $egreso['id_egreso'] ?> — <?= htmlspecialchars($egreso['beneficiario']) ?> — Q<?= number_format($egreso['monto'], 2) ?>
+                                <?= $egreso['id_factura'] ? ' (ya tiene documento vinculado)' : '' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small text-muted">Ingreso Asociado</label>
+                    <select name="id_ingreso_vincular" class="form-select">
+                        <option value="">(Sin vincular)</option>
+                        <?php foreach ($ingresos as $ingreso): ?>
+                            <option value="<?= $ingreso['id_ingreso'] ?>" <?= $idIngresoSeleccionado === (string) $ingreso['id_ingreso'] ? 'selected' : '' ?>>
+                                Ingreso #<?= $ingreso['id_ingreso'] ?> — <?= htmlspecialchars($ingreso['aportante_nombre'] ?? 'No identificado') ?> — Q<?= number_format($ingreso['monto'], 2) ?>
+                                <?= $ingreso['id_factura'] ? ' (ya tiene documento vinculado)' : '' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -184,6 +221,21 @@ $idEgresoSeleccionado = (string) ($valores['id_egreso_vincular'] ?? ($registro['
         if (e.dataTransfer.files.length > 0) {
             inputArchivo.files = e.dataTransfer.files;
             texto.textContent = e.dataTransfer.files[0].name;
+        }
+    });
+
+    const formFactura = document.getElementById('form-factura');
+    const vinculo = formFactura.dataset.vinculo;
+
+    formFactura.addEventListener('submit', function (e) {
+        if (vinculo) {
+            const continuar = confirm(
+                'Este documento está vinculado a "' + vinculo + '". ' +
+                'Al guardar, ese registro también se actualizará con los nuevos datos. ¿Desea continuar?'
+            );
+            if (!continuar) {
+                e.preventDefault();
+            }
         }
     });
 })();

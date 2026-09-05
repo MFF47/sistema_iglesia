@@ -5,6 +5,7 @@ require_once __DIR__ . '/../../core/Csrf.php';
 require_once __DIR__ . '/../../core/Flash.php';
 require_once __DIR__ . '/../models/Factura.php';
 require_once __DIR__ . '/../models/Egreso.php';
+require_once __DIR__ . '/../models/Ingreso.php';
 require_once __DIR__ . '/../models/Bitacora.php';
 
 class FacturasController extends Controller {
@@ -25,6 +26,7 @@ class FacturasController extends Controller {
             'tipo_documento' => $_GET['tipo'] ?? '',
             'desde' => $_GET['desde'] ?? '',
             'hasta' => $_GET['hasta'] ?? '',
+            'origen' => $_GET['origen'] ?? '',
         ];
 
         $pagina = max(1, (int) ($_GET['pagina'] ?? 1));
@@ -84,6 +86,7 @@ class FacturasController extends Controller {
         }
 
         $facturaModel = new Factura();
+        $registroAnterior = $id ? $facturaModel->buscarPorId($id) : null;
 
         $valores = [
             'numero_documento' => trim($_POST['numero_documento'] ?? ''),
@@ -93,6 +96,7 @@ class FacturasController extends Controller {
             'monto' => trim($_POST['monto'] ?? ''),
             'descripcion' => trim($_POST['descripcion'] ?? ''),
             'id_egreso_vincular' => $_POST['id_egreso_vincular'] ?? '',
+            'id_ingreso_vincular' => $_POST['id_ingreso_vincular'] ?? '',
         ];
 
         $errores = $this->validar($valores, $id);
@@ -103,7 +107,7 @@ class FacturasController extends Controller {
         }
 
         if (!empty($errores)) {
-            $this->view('facturas.form', $this->datosFormulario($id ? $facturaModel->buscarPorId($id) : null, $valores, $errores));
+            $this->view('facturas.form', $this->datosFormulario($registroAnterior, $valores, $errores));
             return;
         }
 
@@ -121,6 +125,10 @@ class FacturasController extends Controller {
                 $idFactura
             );
             Flash::set('success', 'Documento actualizado correctamente.');
+
+            // Propaga los cambios de monto/fecha/beneficiario hacia el ingreso o egreso
+            // que ya estaban vinculados a este documento (si los hay).
+            $this->propagarCambiosARegistrosVinculados($registroAnterior, $valores, $idFactura);
         } else {
             $datos['id_usuario_registro'] = Auth::user()['id_usuario'];
             $idFactura = $facturaModel->crear($datos);
@@ -139,7 +147,51 @@ class FacturasController extends Controller {
             $egresoModel->vincularFactura((int) $valores['id_egreso_vincular'], $idFactura);
         }
 
+        if (!empty($valores['id_ingreso_vincular'])) {
+            $ingresoModel = new Ingreso();
+            $ingresoModel->vincularFactura((int) $valores['id_ingreso_vincular'], $idFactura);
+        }
+
         $this->redirect('index.php?c=facturas&a=index');
+    }
+
+    private function propagarCambiosARegistrosVinculados($registroAnterior, array $valores, $idFactura) {
+        if (!$registroAnterior) {
+            return;
+        }
+
+        if (!empty($registroAnterior['egreso_vinculado_id'])) {
+            $egresoModel = new Egreso();
+            $egresoModel->actualizarCamposClave(
+                $registroAnterior['egreso_vinculado_id'],
+                $valores['monto'],
+                $valores['fecha_emision'],
+                $valores['beneficiario']
+            );
+            Bitacora::registrar(
+                'Modificar',
+                'Egresos',
+                "Actualización en cascada del egreso #{$registroAnterior['egreso_vinculado_id']} por edición de la factura {$valores['numero_documento']}",
+                'egresos',
+                $registroAnterior['egreso_vinculado_id']
+            );
+        }
+
+        if (!empty($registroAnterior['ingreso_vinculado_id'])) {
+            $ingresoModel = new Ingreso();
+            $ingresoModel->actualizarCamposClave(
+                $registroAnterior['ingreso_vinculado_id'],
+                $valores['monto'],
+                $valores['fecha_emision']
+            );
+            Bitacora::registrar(
+                'Modificar',
+                'Ingresos',
+                "Actualización en cascada del ingreso #{$registroAnterior['ingreso_vinculado_id']} por edición de la factura {$valores['numero_documento']}",
+                'ingresos',
+                $registroAnterior['ingreso_vinculado_id']
+            );
+        }
     }
 
     private function validar(array $valores, $idExcluir) {
@@ -245,8 +297,34 @@ class FacturasController extends Controller {
 
         $id = (int) ($_POST['id'] ?? 0);
         $facturaModel = new Factura();
+        $registro = $facturaModel->buscarPorId($id);
+
         $facturaModel->cambiarEstado($id, 0);
         Bitacora::registrar('Anular', 'Facturas', "Anulación de documento #{$id}", 'facturas', $id);
+
+        if ($registro && $registro['egreso_vinculado_id']) {
+            $egresoModel = new Egreso();
+            $egresoModel->cambiarEstado($registro['egreso_vinculado_id'], 0);
+            Bitacora::registrar(
+                'Anular',
+                'Egresos',
+                "Anulación en cascada del egreso #{$registro['egreso_vinculado_id']} por anulación de la factura {$registro['numero_documento']}",
+                'egresos',
+                $registro['egreso_vinculado_id']
+            );
+        }
+
+        if ($registro && $registro['ingreso_vinculado_id']) {
+            $ingresoModel = new Ingreso();
+            $ingresoModel->cambiarEstado($registro['ingreso_vinculado_id'], 0);
+            Bitacora::registrar(
+                'Anular',
+                'Ingresos',
+                "Anulación en cascada del ingreso #{$registro['ingreso_vinculado_id']} por anulación de la factura {$registro['numero_documento']}",
+                'ingresos',
+                $registro['ingreso_vinculado_id']
+            );
+        }
 
         Flash::set('success', 'Documento anulado correctamente.');
         $this->redirect('index.php?c=facturas&a=index');
@@ -254,10 +332,16 @@ class FacturasController extends Controller {
 
     private function datosFormulario($registro, array $valoresPost, array $errores) {
         $egresoModel = new Egreso();
+        $ingresoModel = new Ingreso();
 
         $valores = $registro ?: [];
         if (!empty($valoresPost)) {
             $valores = array_merge($valores, $valoresPost);
+        }
+
+        if ($registro) {
+            $valores['id_egreso_vincular'] = $valores['id_egreso_vincular'] ?? $registro['egreso_vinculado_id'] ?? '';
+            $valores['id_ingreso_vincular'] = $valores['id_ingreso_vincular'] ?? $registro['ingreso_vinculado_id'] ?? '';
         }
 
         return [
@@ -266,6 +350,7 @@ class FacturasController extends Controller {
             'valores' => $valores,
             'errores' => $errores,
             'egresos' => $egresoModel->listarParaVincular(),
+            'ingresos' => $ingresoModel->listarParaVincular(),
             'csrfToken' => Csrf::token(),
         ];
     }
