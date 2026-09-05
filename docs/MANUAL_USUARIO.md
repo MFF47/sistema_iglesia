@@ -100,8 +100,9 @@ Pantalla de inicio tras iniciar sesión (`Dashboard` en el menú).
   - **Disponible Caja General**: saldo acumulado **histórico** (todos los ingresos activos menos todos los egresos activos desde siempre) — no depende del mes seleccionado, siempre refleja cuánto hay disponible en caja hoy. Se muestra en un cuadro verde independiente para no confundirlo con los totales del período.
   - **Movimientos** del período: cantidad de ingresos y egresos.
 - **Gráfica "Ingresos vs Egresos por Mes"**: barras de los últimos 6 meses, con el **monto en Quetzales sobre cada barra**.
-- **Gráfica "Distribución de Ingresos por Tipo"**: dona con el peso de Diezmos, Ofrendas, Donaciones y Actividades Especiales — muestra el **porcentaje sobre cada segmento** y el **total general en el centro** de la dona.
-- **Gráfica "Comparativo Mensual del Año"**: balance (ingresos − egresos) mes a mes del año en curso, con el monto sobre cada barra; se mantiene compacta para no ocupar espacio de más.
+- **Gráfica "Distribución de Ingresos por Tipo"**: dona con el peso de Diezmos, Ofrendas, Donaciones y Actividades Especiales — muestra el **porcentaje sobre cada segmento** y el **monto en el centro** de la dona. El nombre (Total / Subtotal / el tipo puntual si se aísla un segmento haciendo clic en la leyenda) se muestra **arriba de la dona**, no dentro del círculo, para que nombres largos no se corten.
+- **Gráfica "Comparativo Mensual del Año"**: balance (ingresos − egresos) mes a mes del año en curso, con el monto sobre cada barra; a media anchura, junto a la dona de egresos.
+- **Gráfica "Distribución de Egresos por Categoría"**: dona con el peso de cada categoría de gasto (Servicios Públicos, Materiales y Suministros, etc.) del período seleccionado — misma mecánica que la dona de Ingresos (porcentaje por segmento, monto en el centro, nombre arriba de la dona). Permite ver no solo de dónde entra el dinero, sino en qué se está gastando.
 
 ---
 
@@ -149,7 +150,7 @@ Menú: **Movimientos → Ingresos**.
 
 - **Disponible Caja General**: visible en un cuadro verde tanto en el listado como en el formulario de registro, siempre actualizado con los datos más recientes.
 - **KPIs**: total del mes actual (con el nombre del mes visible, ej. "Total de Septiembre 2026"), cantidad de registros y promedio diario.
-- **Filtros**: rango de fechas, categoría, tipo de ingreso.
+- **Filtros**: rango de fechas, categoría, tipo de ingreso. Al pie del listado, **"Total filtrado"** muestra en una píldora destacada la suma de lo que el filtro actual está mostrando (distinto del KPI "Total del mes", que no cambia con el filtro).
 - **+ Nuevo Ingreso**:
   - Fecha, **Tipo de Ingreso** (Diezmo, Ofrenda, Donación Especial, Actividad Especial), Categoría, Monto, Descripción (opcional).
   - **Aportante**: opcional en general, pero **obligatorio para Diezmo y Donación Especial**. Puede elegir uno ya registrado o crear uno nuevo sin salir del formulario con el botón **"+ Registrar Nuevo Aportante"**. Solo Administrador y Tesorero llegan a esta pantalla.
@@ -167,7 +168,7 @@ Menú: **Movimientos → Egresos**.
 
 - **Disponible Caja General**: igual que en Ingresos, visible en el listado y en el formulario.
 - **KPIs**: total del mes actual (con el nombre del mes visible), cantidad de registros y monto promedio.
-- **Filtros**: rango de fechas, categoría, beneficiario.
+- **Filtros**: rango de fechas, categoría, beneficiario. Al pie del listado, **"Total filtrado"** muestra en una píldora destacada la suma de lo que el filtro actual está mostrando.
 - **+ Nuevo Egreso**: fecha, categoría, monto, **Beneficiario** (obligatorio) y **Descripción** (obligatoria), Observaciones (opcional).
   - Si el **monto** ingresado supera el **Disponible Caja General** actual, aparece una advertencia visual bajo el campo (no bloquea el registro, es solo informativa).
 - **Comprobante**: igual que en Ingresos — **Tomar Foto** o **Elegir Archivo** (PDF/JPG/PNG hasta 5 MB); al guardarlo se crea automáticamente el documento en Facturas y Recibos (numerado `EGR-<id>`).

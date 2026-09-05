@@ -85,6 +85,22 @@ class Reporte extends Model {
         return $stmt->fetchAll();
     }
 
+    public function distribucionEgresosPorCategoria($desde, $hasta) {
+        $stmt = $this->db->prepare(
+            "SELECT c.nombre, COALESCE(SUM(e.monto), 0) AS total
+             FROM categorias c
+             LEFT JOIN egresos e ON e.id_categoria = c.id_categoria
+                 AND e.activo = 1 AND e.fecha_egreso BETWEEN ? AND ?
+             WHERE c.activo = 1 AND c.tipo = 'egreso'
+             GROUP BY c.id_categoria, c.nombre
+             HAVING total > 0
+             ORDER BY total DESC"
+        );
+        $stmt->execute([$desde, $hasta]);
+
+        return $stmt->fetchAll();
+    }
+
     public function comparativoAnual($anio) {
         $etiquetas = [];
         $totales = [];

@@ -47,6 +47,7 @@ CRUD completo (antes solo existía alta rápida desde Ingresos); accesible desde
 - Adjuntar comprobante por **archivo o cámara del dispositivo** → genera automáticamente el documento en Facturas y Recibos (requirió agregar la columna `id_factura` a la tabla `ingresos`, que no la tenía).
 - Egresos: advertencia visual si el monto supera el disponible.
 - **Cascada de ediciones/anulaciones**: si un ingreso/egreso tiene factura vinculada, editarlo o anularlo pide confirmación y propaga el cambio al documento (y viceversa desde Facturas), quedando registrado en Bitácora en ambos sentidos.
+- **"Total filtrado"** (suma de lo que muestra el filtro actual, al pie del listado) ahora resaltado en una píldora teal con texto grande (antes era texto pequeño gris, poco visible junto al conteo de registros).
 
 ### Facturas y Recibos *(mismo esquema de permisos)*
 - Puede vincularse tanto a un Ingreso como a un Egreso (antes solo a Egreso).
@@ -55,7 +56,10 @@ CRUD completo (antes solo existía alta rápida desde Ingresos); accesible desde
 
 ### Dashboard
 - Selector de Mes/Año (antes solo "mes actual/anterior/año").
-- Gráficas con **datos numéricos dentro** (plugin `chartjs-plugin-datalabels`): dona con porcentaje por segmento y total en el centro, barras con el monto Q encima. Gráfica "Comparativo Anual" reducida a la mitad de alto.
+- Gráficas con **datos numéricos dentro** (plugin `chartjs-plugin-datalabels`): dona con porcentaje por segmento y total en el centro, barras con el monto Q encima.
+- **Donas (Ingresos y Egresos)**: el nombre/categoría (Total, Subtotal, o el nombre puntual al aislar un segmento desde la leyenda) ahora se muestra **arriba de la dona**, no dentro del círculo — dentro solo queda el monto. Evita que nombres largos de categoría se corten o se encimen dentro del círculo.
+- **"Comparativo Mensual del Año"** ahora a media anchura (antes ocupaba todo el ancho), un poco más alta que antes, en la misma fila que la nueva dona de egresos.
+- **"Distribución de Egresos por Categoría"** (dona nueva, misma mecánica que la de Ingresos: porcentaje por segmento y total en el centro, clic en la leyenda para ver subtotales). Antes solo se veía en qué tipo de ingreso entraba el dinero (Diezmo/Ofrenda/Actividad); ahora también se ve en qué categoría de egreso se está gastando.
 
 ### Reportería *(todos los roles)*
 - Tres modos: Ingresos, Egresos y **Consolidado** (ambos juntos, con Total Ingresos / Total Egresos / Balance).

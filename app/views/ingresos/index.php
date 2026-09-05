@@ -182,9 +182,10 @@ $construirQuery = function (array $filtros, $pagina) {
     </div>
 
     <div class="card-body d-flex justify-content-between align-items-center border-top flex-wrap gap-2">
-        <span class="text-muted small">
-            Mostrando <?= count($ingresos) ?> de <?= $total ?> ingresos — Total filtrado: <?= $fmtQ($totalFiltrado) ?>
-        </span>
+        <div class="d-flex align-items-center flex-wrap gap-2">
+            <span class="text-muted small">Mostrando <?= count($ingresos) ?> de <?= $total ?> ingresos</span>
+            <span class="chip-total-filtrado"><i class="bi bi-calculator"></i> Total filtrado: <?= $fmtQ($totalFiltrado) ?></span>
+        </div>
 
         <?php if ($totalPaginas > 1): ?>
             <nav>

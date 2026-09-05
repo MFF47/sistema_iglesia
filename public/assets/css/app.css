@@ -122,7 +122,7 @@ body {
 }
 
 .chart-box-comparativo {
-    height: 220px;
+    height: 260px;
 }
 
 .descripcion-bitacora div {
@@ -132,6 +132,18 @@ body {
 .descripcion-bitacora div:not(:last-child) {
     border-bottom: 1px dashed #e5e5e5;
     margin-bottom: 2px;
+}
+
+.chip-total-filtrado {
+    display: inline-flex;
+    align-items: center;
+    gap: .4rem;
+    background: var(--teal-dark);
+    color: #fff;
+    font-weight: 700;
+    font-size: 1.05rem;
+    padding: .4rem 1rem;
+    border-radius: 999px;
 }
 
 .requisitos-box {

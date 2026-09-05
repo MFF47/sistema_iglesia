@@ -28,6 +28,7 @@ class HomeController extends Controller {
             'variacionEgresos' => $this->variacion($actual['total_egresos'], $anterior['total_egresos']),
             'serieMensual' => $reporteModel->serieMensual(6),
             'distribucionIngresos' => $reporteModel->distribucionIngresosPorTipo($desde, $hasta),
+            'distribucionEgresos' => $reporteModel->distribucionEgresosPorCategoria($desde, $hasta),
             'comparativoAnual' => $reporteModel->comparativoAnual((int) date('Y')),
         ]);
     }

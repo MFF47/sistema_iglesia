@@ -111,6 +111,7 @@ $anioActual = (int) date('Y');
                 <?php if (empty($distribucionIngresos)): ?>
                     <p class="text-muted small mb-0">Sin ingresos registrados en este período.</p>
                 <?php else: ?>
+                    <p class="text-center fw-semibold text-teal-dark mb-1" style="font-size: 1rem;" id="etiquetaDistribucion">Total</p>
                     <div class="chart-box chart-box-donut">
                         <canvas id="chartDistribucion"></canvas>
                     </div>
@@ -120,11 +121,30 @@ $anioActual = (int) date('Y');
     </div>
 </div>
 
-<div class="card mb-3">
-    <div class="card-body">
-        <h2 class="h6 mb-3">Comparativo Mensual del Año (Balance)</h2>
-        <div class="chart-box chart-box-comparativo">
-            <canvas id="chartComparativo"></canvas>
+<div class="row g-3 mb-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Comparativo Mensual del Año (Balance)</h2>
+                <div class="chart-box chart-box-comparativo">
+                    <canvas id="chartComparativo"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-body">
+                <h2 class="h6 mb-3">Distribución de Egresos por Categoría</h2>
+                <?php if (empty($distribucionEgresos)): ?>
+                    <p class="text-muted small mb-0">Sin egresos registrados en este período.</p>
+                <?php else: ?>
+                    <p class="text-center fw-semibold text-teal-dark mb-1" style="font-size: 1rem;" id="etiquetaDistribucionEgresos">Total</p>
+                    <div class="chart-box chart-box-donut">
+                        <canvas id="chartDistribucionEgresos"></canvas>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
     </div>
 </div>
@@ -185,79 +205,102 @@ $anioActual = (int) date('Y');
         },
     });
 
-    <?php if (!empty($distribucionIngresos)): ?>
-    const datosDistribucion = <?= json_encode(array_map('floatval', array_column($distribucionIngresos, 'total'))) ?>;
-    const etiquetasDistribucion = <?= json_encode(array_column($distribucionIngresos, 'nombre')) ?>;
-    const totalDistribucion = datosDistribucion.reduce(function (a, b) { return a + b; }, 0);
+    function crearDonutConTotal(canvasId, etiquetaElementId, datos, etiquetas, colores) {
+        const total = datos.reduce(function (a, b) { return a + b; }, 0);
+        const elementoEtiqueta = document.getElementById(etiquetaElementId);
 
-    const pluginTotalCentro = {
-        id: 'totalCentro',
-        afterDraw: function (chart) {
-            const indicesVisibles = [];
-            datosDistribucion.forEach(function (_, i) {
-                if (chart.getDataVisibility(i)) { indicesVisibles.push(i); }
-            });
+        const pluginTotalCentro = {
+            id: 'totalCentro',
+            afterDraw: function (chart) {
+                const indicesVisibles = [];
+                datos.forEach(function (_, i) {
+                    if (chart.getDataVisibility(i)) { indicesVisibles.push(i); }
+                });
 
-            let etiqueta = 'Total';
-            let suma = totalDistribucion;
+                let etiqueta = 'Total';
+                let suma = total;
 
-            if (indicesVisibles.length === 0) {
-                etiqueta = 'Total';
-                suma = 0;
-            } else if (indicesVisibles.length === 1) {
-                etiqueta = etiquetasDistribucion[indicesVisibles[0]];
-                suma = datosDistribucion[indicesVisibles[0]];
-            } else if (indicesVisibles.length < datosDistribucion.length) {
-                etiqueta = 'Subtotal';
-                suma = indicesVisibles.reduce(function (acumulado, i) { return acumulado + datosDistribucion[i]; }, 0);
-            }
+                if (indicesVisibles.length === 0) {
+                    etiqueta = 'Total';
+                    suma = 0;
+                } else if (indicesVisibles.length === 1) {
+                    etiqueta = etiquetas[indicesVisibles[0]];
+                    suma = datos[indicesVisibles[0]];
+                } else if (indicesVisibles.length < datos.length) {
+                    etiqueta = 'Subtotal';
+                    suma = indicesVisibles.reduce(function (acumulado, i) { return acumulado + datos[i]; }, 0);
+                }
 
-            const ctx = chart.ctx;
-            const area = chart.chartArea;
-            const cx = (area.left + area.right) / 2;
-            const cy = (area.top + area.bottom) / 2;
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#6c757d';
-            ctx.font = '11px "Segoe UI", sans-serif';
-            ctx.fillText(etiqueta, cx, cy - 10);
-            ctx.fillStyle = '#16324a';
-            ctx.font = 'bold 15px "Segoe UI", sans-serif';
-            ctx.fillText(fmtQCorto(suma), cx, cy + 9);
-            ctx.restore();
-        },
-    };
+                // El nombre/etiqueta se muestra fuera de la dona (arriba, en el DOM)
+                // para que no se corte cuando el nombre de la categoría es largo;
+                // dentro del círculo solo queda el monto.
+                if (elementoEtiqueta) {
+                    elementoEtiqueta.textContent = etiqueta;
+                }
 
-    new Chart(document.getElementById('chartDistribucion'), {
-        type: 'doughnut',
-        data: {
-            labels: etiquetasDistribucion,
-            datasets: [{
-                data: datosDistribucion,
-                backgroundColor: [colorTeal, colorAmber, colorGreen, colorRed, '#7c92a3'],
-            }],
-        },
-        plugins: [pluginTotalCentro],
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '62%',
-            plugins: {
-                legend: { position: 'bottom' },
-                datalabels: {
-                    display: true,
-                    color: '#fff',
-                    font: { size: 11, weight: '700' },
-                    formatter: function (valor) {
-                        if (!totalDistribucion) { return ''; }
-                        const pct = (valor / totalDistribucion) * 100;
-                        return pct >= 5 ? pct.toFixed(0) + '%' : '';
+                const ctx = chart.ctx;
+                const area = chart.chartArea;
+                const cx = (area.left + area.right) / 2;
+                const cy = (area.top + area.bottom) / 2;
+                ctx.save();
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillStyle = '#16324a';
+                ctx.font = 'bold 16px "Segoe UI", sans-serif';
+                ctx.fillText(fmtQCorto(suma), cx, cy);
+                ctx.restore();
+            },
+        };
+
+        return new Chart(document.getElementById(canvasId), {
+            type: 'doughnut',
+            data: {
+                labels: etiquetas,
+                datasets: [{
+                    data: datos,
+                    backgroundColor: colores,
+                }],
+            },
+            plugins: [pluginTotalCentro],
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '62%',
+                plugins: {
+                    legend: { position: 'bottom' },
+                    datalabels: {
+                        display: true,
+                        color: '#fff',
+                        font: { size: 11, weight: '700' },
+                        formatter: function (valor) {
+                            if (!total) { return ''; }
+                            const pct = (valor / total) * 100;
+                            return pct >= 5 ? pct.toFixed(0) + '%' : '';
+                        },
                     },
                 },
             },
-        },
-    });
+        });
+    }
+
+    <?php if (!empty($distribucionIngresos)): ?>
+    crearDonutConTotal(
+        'chartDistribucion',
+        'etiquetaDistribucion',
+        <?= json_encode(array_map('floatval', array_column($distribucionIngresos, 'total'))) ?>,
+        <?= json_encode(array_column($distribucionIngresos, 'nombre')) ?>,
+        [colorTeal, colorAmber, colorGreen, colorRed, '#7c92a3']
+    );
+    <?php endif; ?>
+
+    <?php if (!empty($distribucionEgresos)): ?>
+    crearDonutConTotal(
+        'chartDistribucionEgresos',
+        'etiquetaDistribucionEgresos',
+        <?= json_encode(array_map('floatval', array_column($distribucionEgresos, 'total'))) ?>,
+        <?= json_encode(array_column($distribucionEgresos, 'nombre')) ?>,
+        [colorRed, colorAmber, colorTeal, colorGreen, '#7c92a3']
+    );
     <?php endif; ?>
 
     new Chart(document.getElementById('chartComparativo'), {
