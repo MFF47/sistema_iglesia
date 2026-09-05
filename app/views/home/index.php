@@ -61,7 +61,6 @@ $anioActual = (int) date('Y');
             <div class="card-body">
                 <p class="text-muted small mb-1">Total Ingresos</p>
                 <p class="h4 mb-1"><?= $fmtQ($kpis['total_ingresos']) ?></p>
-                <?= $badgeVariacion($variacionIngresos) ?>
             </div>
         </div>
     </div>
@@ -188,11 +187,31 @@ $anioActual = (int) date('Y');
 
     <?php if (!empty($distribucionIngresos)): ?>
     const datosDistribucion = <?= json_encode(array_map('floatval', array_column($distribucionIngresos, 'total'))) ?>;
+    const etiquetasDistribucion = <?= json_encode(array_column($distribucionIngresos, 'nombre')) ?>;
     const totalDistribucion = datosDistribucion.reduce(function (a, b) { return a + b; }, 0);
 
     const pluginTotalCentro = {
         id: 'totalCentro',
         afterDraw: function (chart) {
+            const indicesVisibles = [];
+            datosDistribucion.forEach(function (_, i) {
+                if (chart.getDataVisibility(i)) { indicesVisibles.push(i); }
+            });
+
+            let etiqueta = 'Total';
+            let suma = totalDistribucion;
+
+            if (indicesVisibles.length === 0) {
+                etiqueta = 'Total';
+                suma = 0;
+            } else if (indicesVisibles.length === 1) {
+                etiqueta = etiquetasDistribucion[indicesVisibles[0]];
+                suma = datosDistribucion[indicesVisibles[0]];
+            } else if (indicesVisibles.length < datosDistribucion.length) {
+                etiqueta = 'Subtotal';
+                suma = indicesVisibles.reduce(function (acumulado, i) { return acumulado + datosDistribucion[i]; }, 0);
+            }
+
             const ctx = chart.ctx;
             const area = chart.chartArea;
             const cx = (area.left + area.right) / 2;
@@ -202,10 +221,10 @@ $anioActual = (int) date('Y');
             ctx.textBaseline = 'middle';
             ctx.fillStyle = '#6c757d';
             ctx.font = '11px "Segoe UI", sans-serif';
-            ctx.fillText('Total', cx, cy - 10);
+            ctx.fillText(etiqueta, cx, cy - 10);
             ctx.fillStyle = '#16324a';
             ctx.font = 'bold 15px "Segoe UI", sans-serif';
-            ctx.fillText(fmtQCorto(totalDistribucion), cx, cy + 9);
+            ctx.fillText(fmtQCorto(suma), cx, cy + 9);
             ctx.restore();
         },
     };
@@ -213,7 +232,7 @@ $anioActual = (int) date('Y');
     new Chart(document.getElementById('chartDistribucion'), {
         type: 'doughnut',
         data: {
-            labels: <?= json_encode(array_column($distribucionIngresos, 'nombre')) ?>,
+            labels: etiquetasDistribucion,
             datasets: [{
                 data: datosDistribucion,
                 backgroundColor: [colorTeal, colorAmber, colorGreen, colorRed, '#7c92a3'],
@@ -242,27 +261,31 @@ $anioActual = (int) date('Y');
     <?php endif; ?>
 
     new Chart(document.getElementById('chartComparativo'), {
-        type: 'bar',
+        type: 'line',
         data: {
             labels: <?= json_encode($comparativoAnual['etiquetas']) ?>,
             datasets: [{
                 label: 'Balance',
                 data: <?= json_encode($comparativoAnual['balance']) ?>,
-                backgroundColor: colorTeal,
+                borderColor: colorTeal,
+                backgroundColor: 'rgba(15, 76, 92, 0.15)',
+                fill: true,
+                tension: 0.35,
+                pointRadius: 3,
+                pointBackgroundColor: colorTeal,
             }],
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            layout: { padding: { top: 18 } },
+            layout: { padding: { top: 22 } },
             plugins: {
                 legend: { display: false },
                 datalabels: {
                     display: true,
-                    anchor: 'end',
                     align: 'top',
                     color: '#495057',
-                    font: { size: 9, weight: '600' },
+                    font: { size: 10, weight: '600' },
                     formatter: function (valor) { return valor !== 0 ? fmtQCorto(valor) : null; },
                 },
             },

@@ -137,7 +137,7 @@ class ReporteriaController extends Controller {
                 td { padding: 5px 8px; border-bottom: 1px solid #ddd; font-size: 10px; }
                 tr:nth-child(even) td { background: #f4f6f8; }
                 .text-end { text-align: right; }
-                .total-row td { background: #d98c22; color: #1a1a1a; font-weight: bold; border-top: 2px solid #a8691a; }
+                .total-row td { background: #dee2e6; color: #16324a; font-weight: bold; border-top: 2px solid #adb5bd; }
                 .badge-ingreso { color: #227355; font-weight: bold; }
                 .badge-egreso { color: #a83232; font-weight: bold; }
             </style>

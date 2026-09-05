@@ -17,6 +17,28 @@ class Usuario extends Model {
         return $usuario ?: null;
     }
 
+    public function buscarPorCorreo($correo) {
+        $stmt = $this->db->prepare(
+            'SELECT u.*, r.nombre AS rol_nombre
+             FROM usuarios u
+             INNER JOIN roles r ON r.id_rol = u.id_rol
+             WHERE u.correo = ?
+             LIMIT 1'
+        );
+        $stmt->execute([$correo]);
+
+        $usuario = $stmt->fetch();
+
+        return $usuario ?: null;
+    }
+
+    public function actualizarContrasena($idUsuario, $contrasenaHash) {
+        $stmt = $this->db->prepare(
+            'UPDATE usuarios SET contrasena_hash = ?, intentos_fallidos = 0, bloqueado = 0, fecha_bloqueo = NULL WHERE id_usuario = ?'
+        );
+        $stmt->execute([$contrasenaHash, $idUsuario]);
+    }
+
     public function registrarAccesoExitoso($idUsuario) {
         $stmt = $this->db->prepare(
             'UPDATE usuarios SET intentos_fallidos = 0, ultimo_acceso = NOW() WHERE id_usuario = ?'

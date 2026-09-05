@@ -122,7 +122,7 @@ body {
 }
 
 .chart-box-comparativo {
-    height: 100px;
+    height: 220px;
 }
 
 .descripcion-bitacora div {
@@ -132,6 +132,17 @@ body {
 .descripcion-bitacora div:not(:last-child) {
     border-bottom: 1px dashed #e5e5e5;
     margin-bottom: 2px;
+}
+
+.requisitos-box {
+    background: #f4f6f8;
+    border: 1px solid #e5e9ec;
+    border-radius: .5rem;
+    padding: .85rem 1rem;
+}
+
+.requisitos-box ul {
+    padding-left: 1.1rem;
 }
 
 .card-total-suave {

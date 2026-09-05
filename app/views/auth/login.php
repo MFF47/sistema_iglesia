@@ -81,11 +81,17 @@
             color: #fff;
         }
 
-        .login-forgot {
-            display: block;
-            text-align: center;
-            font-size: 0.875rem;
-            margin: 1rem 0 1.25rem;
+        .btn-amber {
+            background: var(--amber);
+            border-color: var(--amber);
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .btn-amber:hover {
+            background: #c17d1a;
+            border-color: #c17d1a;
+            color: #fff;
         }
 
         .login-footer {
@@ -107,6 +113,12 @@
         <p class="login-brand">Iglesia Centroamericana Nueva Vida</p>
         <h1 class="h5 login-title">Sistema de Control Financiero</h1>
         <p class="login-subtitle">Ingrese sus credenciales para acceder al sistema</p>
+
+        <?php if (!empty($flash)): ?>
+            <div class="alert alert-<?= htmlspecialchars($flash['tipo']) ?> py-2" role="alert">
+                <?= htmlspecialchars($flash['mensaje']) ?>
+            </div>
+        <?php endif; ?>
 
         <?php if (!empty($error)): ?>
             <div class="alert alert-danger py-2" role="alert">
@@ -143,9 +155,8 @@
                 >
             </div>
 
-            <a href="#" class="login-forgot">¿Olvidó su contraseña?</a>
-
-            <button type="submit" class="btn btn-login w-100 py-2">Iniciar Sesión</button>
+            <button type="submit" class="btn btn-login w-100 py-2 mb-2">Iniciar Sesión</button>
+            <a href="index.php?c=auth&a=recuperar" class="btn btn-amber w-100 py-2">¿Olvidó su contraseña?</a>
         </form>
 
         <p class="login-footer">&copy; <?= date('Y') ?> — Iglesia Centroamericana Nueva Vida</p>

@@ -13,6 +13,10 @@
     <div class="d-flex align-items-center gap-2 gap-md-3">
         <span class="topbar-user"><?= htmlspecialchars($usuario['nombre_completo']) ?></span>
         <span class="badge rounded-pill topbar-role"><?= htmlspecialchars($usuario['rol_nombre']) ?></span>
+        <a href="index.php?c=perfil&a=cambiarPassword" class="topbar-logout" title="Cambiar contraseña">
+            <i class="bi bi-key d-inline d-sm-none"></i>
+            <span class="d-none d-sm-inline">Cambiar contraseña</span>
+        </a>
         <a href="index.php?c=auth&a=logout" class="topbar-logout" title="Cerrar sesión">
             <i class="bi bi-box-arrow-right d-inline d-sm-none"></i>
             <span class="d-none d-sm-inline">Cerrar sesión</span>

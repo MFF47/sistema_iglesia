@@ -87,35 +87,46 @@ $activoSeleccionado = array_key_exists('activo', $valores) ? (string) $valores['
             <h2 class="h6 mb-3">Credenciales y Rol</h2>
 
             <div class="row g-3">
-                <div class="col-md-6">
-                    <label class="form-label">
-                        Contraseña <?= $esEdicion ? '' : '<span class="text-danger">*</span>' ?>
-                    </label>
-                    <input
-                        type="password"
-                        name="contrasena"
-                        class="form-control <?= isset($errores['contrasena']) ? 'is-invalid' : '' ?>"
-                        placeholder="<?= $esEdicion ? 'Dejar en blanco para no cambiarla' : 'Mínimo 8 caracteres' ?>"
-                    >
-                    <?php if (isset($errores['contrasena'])): ?>
-                        <div class="invalid-feedback"><?= htmlspecialchars($errores['contrasena']) ?></div>
-                    <?php endif; ?>
-                </div>
+                <?php if (!empty($esUsuarioActual)): ?>
+                    <div class="col-12">
+                        <div class="alert alert-info d-flex justify-content-between align-items-center flex-wrap gap-2 mb-0" role="alert">
+                            <span><i class="bi bi-info-circle"></i> Por seguridad, su propia contraseña se cambia desde una pantalla aparte que confirma la contraseña actual.</span>
+                            <a href="index.php?c=perfil&a=cambiarPassword" class="btn btn-teal btn-sm"><i class="bi bi-key"></i> Cambiar mi contraseña</a>
+                        </div>
+                    </div>
+                <?php else: ?>
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Contraseña <?= $esEdicion ? '' : '<span class="text-danger">*</span>' ?>
+                        </label>
+                        <input
+                            type="password"
+                            name="contrasena"
+                            class="form-control <?= isset($errores['contrasena']) ? 'is-invalid' : '' ?>"
+                            placeholder="<?= $esEdicion ? 'Dejar en blanco para no cambiarla' : 'Mínimo 8 caracteres' ?>"
+                        >
+                        <?php if (isset($errores['contrasena'])): ?>
+                            <div class="invalid-feedback"><?= htmlspecialchars($errores['contrasena']) ?></div>
+                        <?php else: ?>
+                            <div class="form-text">Mínimo 8 caracteres, una mayúscula, un número y un símbolo (!@#$%&amp;*).</div>
+                        <?php endif; ?>
+                    </div>
 
-                <div class="col-md-6">
-                    <label class="form-label">
-                        Confirmar Contraseña <?= $esEdicion ? '' : '<span class="text-danger">*</span>' ?>
-                    </label>
-                    <input
-                        type="password"
-                        name="confirmar_contrasena"
-                        class="form-control <?= isset($errores['confirmar_contrasena']) ? 'is-invalid' : '' ?>"
-                        placeholder="Repita la contraseña"
-                    >
-                    <?php if (isset($errores['confirmar_contrasena'])): ?>
-                        <div class="invalid-feedback"><?= htmlspecialchars($errores['confirmar_contrasena']) ?></div>
-                    <?php endif; ?>
-                </div>
+                    <div class="col-md-6">
+                        <label class="form-label">
+                            Confirmar Contraseña <?= $esEdicion ? '' : '<span class="text-danger">*</span>' ?>
+                        </label>
+                        <input
+                            type="password"
+                            name="confirmar_contrasena"
+                            class="form-control <?= isset($errores['confirmar_contrasena']) ? 'is-invalid' : '' ?>"
+                            placeholder="Repita la contraseña"
+                        >
+                        <?php if (isset($errores['confirmar_contrasena'])): ?>
+                            <div class="invalid-feedback"><?= htmlspecialchars($errores['confirmar_contrasena']) ?></div>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
 
                 <div class="col-md-6">
                     <label class="form-label">Rol del Usuario <span class="text-danger">*</span></label>

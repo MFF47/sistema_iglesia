@@ -1,7 +1,7 @@
 # Manual de Usuario
 ## Sistema de Control Financiero y Administrativo — Iglesia Centroamericana Nueva Vida
 
-Este manual describe los módulos ya construidos y cómo usarlos. Corresponde al avance hasta el módulo de Bitácora, más el módulo adicional de Aportantes (pendiente solo la pantalla de Configuración, sin mockup de referencia, y recuperación de contraseña).
+Este manual describe los módulos ya construidos y cómo usarlos. Corresponde al avance hasta el módulo de recuperación de contraseña, más el módulo adicional de Aportantes (pendiente solo la pantalla de Configuración, sin mockup de referencia).
 
 **Demo funcional:** 27 de septiembre de 2026.
 
@@ -48,7 +48,16 @@ Una vez ambos servicios están arriba, continúe con el login:
 3. Después de **5 intentos fallidos consecutivos**, la cuenta se bloquea automáticamente. Debe contactar a un Administrador para desbloquearla.
 4. Para salir, use **Cerrar sesión** en la esquina superior derecha (visible en todas las pantallas; en celular se muestra solo el ícono).
 
-> "¿Olvidó su contraseña?" todavía no está implementado (mockups 02 y 03, pendientes).
+### Recuperación de contraseña
+
+1. En la pantalla de login, dé clic en **"¿Olvidó su contraseña?"**.
+2. Ingrese su correo registrado y dé clic en **"Enviar Enlace de Recuperación"**. El sistema siempre muestra el mismo mensaje genérico (exista o no el correo), por seguridad.
+3. Si el correo existe y la cuenta está activa, se envía un enlace válido por **30 minutos** al correo.
+4. Al abrir el enlace, ingrese su nueva contraseña dos veces. Debe tener mínimo 8 caracteres, una mayúscula, un número y un símbolo (`!@#$%&*`).
+5. El enlace se invalida después de usarse una vez o al vencer los 30 minutos; si ya no es válido, se ofrece la opción de solicitar uno nuevo.
+6. El correo recibido usa la paleta de colores del sistema (encabezado navy/teal, botón de acción, acento en amber) y se ve como una notificación profesional de la aplicación, no como un correo genérico.
+
+> El envío de correo usa SMTP configurado en `config/mail.php` (no versionado en git por contener credenciales). Actualmente usa un correo personal temporal para pruebas/demo; deberá reemplazarse por las credenciales del hosting definitivo antes de producción.
 
 ### Usuarios de prueba disponibles
 
@@ -124,9 +133,13 @@ Menú: **Gestión → Aportantes**. Son las personas identificadas en los ingres
 Menú: **Gestión → Usuarios y Roles**.
 
 - **Listado**: buscar por nombre/usuario/correo, filtrar por rol y por estado (Activo/Inactivo), con paginación.
-- **+ Nuevo Usuario**: complete nombre de usuario, nombre completo, correo, teléfono (opcional), contraseña (mínimo 8 caracteres) y confirmación, rol y estado.
-- **Editar** (ícono de lápiz): igual que crear, pero la contraseña es opcional — si se deja en blanco, la contraseña actual no cambia.
+- **+ Nuevo Usuario**: complete nombre de usuario, nombre completo, correo, teléfono (opcional), contraseña y confirmación, rol y estado. La contraseña debe cumplir las mismas reglas de seguridad usadas en recuperación de contraseña: mínimo 8 caracteres, una mayúscula, un número y un símbolo (`!@#$%&*`).
+- **Editar** (ícono de lápiz): igual que crear, pero la contraseña es opcional — si se deja en blanco, la contraseña actual no cambia. Un Administrador puede establecer la contraseña de **cualquier otro usuario, sin importar su rol**, directamente desde este formulario, sin necesidad de pasar por el correo de recuperación. Al editar **su propio usuario**, los campos de contraseña no aparecen aquí — en su lugar hay un botón "Cambiar mi contraseña" que lleva a la pantalla dedicada (la que exige confirmar la contraseña actual), para no permitir cambiarse la contraseña a sí mismo sin esa verificación.
 - **Activar/Desactivar** (ícono circular): cambia el estado del usuario. No puede desactivar su propio usuario mientras tiene la sesión abierta.
+
+### Cambiar mi propia contraseña *(todos los roles)*
+
+Desde el ícono de llave en la barra superior ("Cambiar contraseña"), cualquier usuario logueado puede actualizar su propia contraseña sin pasar por el correo de recuperación. Debe ingresar su **contraseña actual** (se valida antes de permitir el cambio) más la nueva contraseña dos veces, cumpliendo las mismas reglas de seguridad.
 
 ---
 

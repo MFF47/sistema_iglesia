@@ -17,6 +17,7 @@
 | 9 | Reportería y Dashboard | ✅ Completado |
 | 10 | Bitácora | ✅ Completado — falta solo Configuración (sin mockup) |
 | — | Aportantes (módulo extra, no listado originalmente) | ✅ Completado |
+| — | Recuperación de contraseña (módulo extra, mockups 02 y 03) | ✅ Completado |
 
 ---
 
@@ -64,6 +65,12 @@ CRUD completo (antes solo existía alta rápida desde Ingresos); accesible desde
 ### Bitácora *(Administrador y Supervisor)*
 Registra automáticamente login, altas/bajas/cambios en todos los módulos, cascadas y consultas de reportes. Descripción mostrada en líneas separadas (no en una sola oración con guiones). Exporta **solo a PDF** (se quitó Excel a pedido). Corregido un bug real: filtrar por la fecha de hoy no mostraba nada.
 
+### Recuperación de contraseña *(mockups 02 y 03)*
+Usa la tabla `sesiones` ya existente en el esquema (`tipo = 'recuperacion_password'`) para el token: aleatorio de 64 caracteres, vence en 30 minutos, de un solo uso. El mensaje de "correo enviado" es siempre el mismo exista o no la cuenta, para no revelar qué correos están registrados. Envío real por SMTP con **PHPMailer** (se agregó vía Composer); credenciales en `config/mail.php`, excluido de git porque por ahora usa un correo personal para pruebas/demo (a reemplazar por las del hosting definitivo). Cada envío y cada restablecimiento exitoso queda registrado en Bitácora. La plantilla del correo (`Mailer::plantillaBoton`) usa la paleta navy/teal/amber del sistema para que se vea como una notificación de la aplicación, no como un correo genérico. Los botones "¿Olvidó su contraseña?" y "Volver al inicio de sesión" ahora tienen la misma forma que los botones principales, diferenciados en color amber.
+
+### Gestión de contraseñas por Administrador y autogestión
+Regla de complejidad centralizada en `core/PasswordPolicy.php` (mínimo 8 caracteres, una mayúscula, un número, un símbolo) — la usan tanto la recuperación por correo como la creación/edición de usuarios, para no tener dos estándares distintos. Un Administrador puede fijar la contraseña de cualquier **otro** usuario, sin importar el rol, directamente desde Gestión → Usuarios, sin pasar por correo. Se agregó además una pantalla de autogestión ("Cambiar contraseña", accesible desde un ícono en la barra superior para cualquier rol) donde el propio usuario cambia su contraseña confirmando primero la actual. **Corrección de seguridad**: el formulario de Gestión → Usuarios permitía antes cambiarle la contraseña al usuario logueado sin confirmar la actual; ahora, al editar el propio usuario, ese formulario oculta los campos de contraseña y redirige a la pantalla de autogestión — reforzado también en el backend (`UsuariosController::guardar()` ignora cualquier contraseña recibida por ese formulario cuando el `id` editado es el del usuario logueado, incluso ante una petición manipulada).
+
 ---
 
 ## Infraestructura y correcciones técnicas
@@ -79,7 +86,7 @@ Registra automáticamente login, altas/bajas/cambios en todos los módulos, casc
 ## Pendiente
 
 - **Pantalla de Configuración** del sistema (tabla `configuracion` ya existe en la BD, vacía; no hay mockup de referencia entre los 16 diseños).
-- **Recuperación de contraseña** (mockups 02 y 03, no construidos).
+- **Configurar SMTP definitivo**: `config/mail.php` usa temporalmente un correo personal para pruebas/demo; reemplazar por las credenciales del hosting antes de producción.
 - **Traslados internos entre caja y banco**: el esquema de 13 tablas no tiene concepto de "cuentas"; queda pendiente de decisión con quien lleva la tesorería.
 - Revisar antes de producción: mover el `DocumentRoot` del hosting final a `public/`, o replicar los `.htaccess` de protección a `app/`, `core/`, `config/`.
 - Confirmar visualmente el diseño responsivo en un celular real (se verificó matemáticamente que no hay desbordamiento horizontal, pero la herramienta de captura usada en desarrollo no permite simular un ancho de teléfono real menor a ~500px).

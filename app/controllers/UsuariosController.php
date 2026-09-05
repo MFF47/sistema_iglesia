@@ -6,6 +6,7 @@ require_once __DIR__ . '/../../core/Flash.php';
 require_once __DIR__ . '/../models/Usuario.php';
 require_once __DIR__ . '/../models/Rol.php';
 require_once __DIR__ . '/../models/Bitacora.php';
+require_once __DIR__ . '/../../core/PasswordPolicy.php';
 
 class UsuariosController extends Controller {
     private const POR_PAGINA = 5;
@@ -52,6 +53,7 @@ class UsuariosController extends Controller {
             'errores' => [],
             'valores' => [],
             'csrfToken' => Csrf::token(),
+            'esUsuarioActual' => false,
         ]);
     }
 
@@ -81,6 +83,7 @@ class UsuariosController extends Controller {
             'errores' => [],
             'valores' => $registro,
             'csrfToken' => Csrf::token(),
+            'esUsuarioActual' => (int) Auth::user()['id_usuario'] === (int) $registro['id_usuario'],
         ]);
     }
 
@@ -108,8 +111,13 @@ class UsuariosController extends Controller {
             'id_rol' => $_POST['id_rol'] ?? '',
             'activo' => ($_POST['activo'] ?? '1') === '1' ? 1 : 0,
         ];
-        $contrasena = $_POST['contrasena'] ?? '';
-        $confirmar = $_POST['confirmar_contrasena'] ?? '';
+        $esUsuarioActual = $id && (int) Auth::user()['id_usuario'] === (int) $id;
+
+        // El cambio de contraseña del propio usuario logueado se hace desde
+        // "Cambiar contraseña" (confirma la contraseña actual); este formulario
+        // de Usuarios nunca la modifica para el usuario logueado, aunque se envíe.
+        $contrasena = $esUsuarioActual ? '' : ($_POST['contrasena'] ?? '');
+        $confirmar = $esUsuarioActual ? '' : ($_POST['confirmar_contrasena'] ?? '');
 
         $rolModel = new Rol();
         $roles = $rolModel->listarActivos();
@@ -126,6 +134,7 @@ class UsuariosController extends Controller {
                 'errores' => $errores,
                 'valores' => $valores,
                 'csrfToken' => Csrf::token(),
+                'esUsuarioActual' => $esUsuarioActual,
             ]);
             return;
         }
@@ -170,8 +179,8 @@ class UsuariosController extends Controller {
 
         if (!$idExcluir && $contrasena === '') {
             $errores['contrasena'] = 'La contraseña es obligatoria.';
-        } elseif ($contrasena !== '' && strlen($contrasena) < 8) {
-            $errores['contrasena'] = 'La contraseña debe tener al menos 8 caracteres.';
+        } elseif ($contrasena !== '' && !PasswordPolicy::cumple($contrasena)) {
+            $errores['contrasena'] = 'La contraseña no cumple con los requisitos: ' . PasswordPolicy::DESCRIPCION;
         } elseif ($contrasena !== '' && $contrasena !== $confirmar) {
             $errores['confirmar_contrasena'] = 'Las contraseñas no coinciden.';
         }

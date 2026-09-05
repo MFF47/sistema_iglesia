@@ -11,9 +11,10 @@ use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 class ExcelExporter {
     const NAVY = '16324A';
     const TEAL_DARK = '0C3A46';
-    const AMBER = 'D98C22';
     const LIGHT_GRAY = 'F4F6F8';
     const BORDER_GRAY = 'DDDDDD';
+    const TOTAL_BG = 'DEE2E6';
+    const TOTAL_TEXT = '16324A';
 
     /**
      * @param array $encabezados nombres de columna
@@ -79,8 +80,8 @@ class ExcelExporter {
                     $sheet->setCellValue(self::letraColumna($i + 1) . $filaActual, $valor);
                 }
                 $rangoTotal = "A{$filaActual}:{$ultimaColumna}{$filaActual}";
-                $sheet->getStyle($rangoTotal)->getFont()->setBold(true);
-                $sheet->getStyle($rangoTotal)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB(self::AMBER);
+                $sheet->getStyle($rangoTotal)->getFont()->setBold(true)->getColor()->setRGB(self::TOTAL_TEXT);
+                $sheet->getStyle($rangoTotal)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB(self::TOTAL_BG);
                 $sheet->getStyle($rangoTotal)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
                 $filaActual++;
             }
