@@ -1,7 +1,7 @@
 # Manual de Usuario
 ## Sistema de Control Financiero y Administrativo — Iglesia Centroamericana Nueva Vida
 
-Este manual describe los módulos ya construidos y cómo usarlos. Corresponde al avance hasta el módulo de recuperación de contraseña, más el módulo adicional de Aportantes (pendiente solo la pantalla de Configuración, sin mockup de referencia).
+Este manual describe los módulos ya construidos y cómo usarlos. Los 10 módulos del plan y las 17 pantallas están completos: las 16 con mockup de referencia más Aportantes (módulo adicional no contemplado en los mockups originales, que pasa a ser la pantalla 17).
 
 **Demo funcional:** 27 de septiembre de 2026.
 
@@ -223,5 +223,5 @@ Menú: **Reportes → Bitácora**. Registro de auditoría de todo lo que ocurre 
 - **Zona horaria**: `php.ini` traía `Europe/Berlin` de fábrica; se corrigió a `America/Guatemala` para que las horas mostradas en el sistema (ej. "Generado:" en los reportes) coincidan con la hora real.
 - **Diseño responsivo**: el menú lateral se oculta en pantallas de celular y se abre con el botón de hamburguesa (☰) junto al logo. Si algo se ve apretado en un equipo específico, revisar primero el zoom del navegador.
 - Los archivos `tmp_create_admin.php` y `tmp_create_test_users.php` son herramientas de un solo uso para crear los usuarios iniciales. Pueden borrarse cuando ya no se necesiten.
-- **Pendiente** (no bloqueante para la demo): pantalla de Configuración del sistema (la tabla existe en la base de datos pero no tiene mockup de referencia), recuperación de contraseña por correo, y una decisión pendiente sobre cómo registrar traslados internos entre caja y banco (el esquema actual no tiene concepto de "cuentas").
-- **Cambio de esquema de base de datos**: se agregó la columna `id_factura` (nullable) a la tabla `ingresos`, para que los ingresos también puedan vincularse a un documento igual que los egresos. Es un cambio aditivo — no afecta ni borra datos existentes.
+- **Pendiente**: una decisión sobre cómo registrar traslados internos entre caja y banco (el esquema actual no tiene concepto de "cuentas"). No queda ningún módulo o pantalla sin construir. (Se evaluó una pantalla de Configuración del sistema, pero se decidió que no era necesaria para el alcance del proyecto y se descartó — incluida la tabla `configuracion`, que se eliminó de la base de datos.)
+- **Cambios de esquema de base de datos**: se agregó la columna `id_factura` (nullable) a la tabla `ingresos`, para que los ingresos también puedan vincularse a un documento igual que los egresos (cambio aditivo, no afecta datos existentes). Por otro lado, se **eliminó la tabla `configuracion`** (existía vacía desde el script SQL original; se llegó a construir una pantalla de parámetros generales sobre ella, pero se decidió que no era necesaria y se revirtió por completo). El esquema pasó de 13 a 12 tablas.

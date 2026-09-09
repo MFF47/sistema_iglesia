@@ -15,9 +15,11 @@
 | 7 | Categorías | ✅ Completado |
 | 8 | Ingresos / Egresos / Facturas | ✅ Completado |
 | 9 | Reportería y Dashboard | ✅ Completado |
-| 10 | Bitácora | ✅ Completado — falta solo Configuración (sin mockup) |
-| — | Aportantes (módulo extra, no listado originalmente) | ✅ Completado |
+| 10 | Bitácora | ✅ Completado |
+| — | Aportantes (módulo extra, no contemplado en los mockups originales — pasa a ser la pantalla 17) | ✅ Completado |
 | — | Recuperación de contraseña (módulo extra, mockups 02 y 03) | ✅ Completado |
+
+**Los 10 módulos del plan y las 17 pantallas (16 con mockup + Aportantes) están construidos.** Se evaluó agregar un módulo de Configuración del sistema (parámetros generales), pero se decidió que no es necesario para el alcance de este proyecto — se revirtió por completo (código, permisos, menú y la tabla `configuracion` en la base de datos).
 
 ---
 
@@ -89,9 +91,8 @@ Regla de complejidad centralizada en `core/PasswordPolicy.php` (mínimo 8 caract
 
 ## Pendiente
 
-- **Pantalla de Configuración** del sistema (tabla `configuracion` ya existe en la BD, vacía; no hay mockup de referencia entre los 16 diseños).
 - **Configurar SMTP definitivo**: `config/mail.php` usa temporalmente un correo personal para pruebas/demo; reemplazar por las credenciales del hosting antes de producción.
-- **Traslados internos entre caja y banco**: el esquema de 13 tablas no tiene concepto de "cuentas"; queda pendiente de decisión con quien lleva la tesorería.
+- **Traslados internos entre caja y banco**: el esquema actual no tiene concepto de "cuentas"; queda pendiente de decisión con quien lleva la tesorería.
 - Revisar antes de producción: mover el `DocumentRoot` del hosting final a `public/`, o replicar los `.htaccess` de protección a `app/`, `core/`, `config/`.
 - Confirmar visualmente el diseño responsivo en un celular real (se verificó matemáticamente que no hay desbordamiento horizontal, pero la herramienta de captura usada en desarrollo no permite simular un ancho de teléfono real menor a ~500px).
 

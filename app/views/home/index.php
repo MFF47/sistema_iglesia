@@ -3,7 +3,7 @@ $tituloPagina = 'Dashboard';
 $activeMenu = 'dashboard';
 require __DIR__ . '/../layout/header.php';
 
-$fmtQ = fn($monto) => 'Q' . number_format((float) $monto, 0);
+$fmtQ = fn($monto) => 'Q' . number_format((float) $monto, 2);
 
 $badgeVariacion = function ($variacion) {
     if ($variacion['nuevo']) {
@@ -161,12 +161,9 @@ $anioActual = (int) date('Y');
     Chart.register(ChartDataLabels);
     Chart.defaults.set('plugins.datalabels', { display: false });
 
-    const fmtQCorto = function (valor) {
+    const fmtQCompleto = function (valor) {
         const num = Number(valor) || 0;
-        if (Math.abs(num) >= 1000) {
-            return 'Q' + (num / 1000).toLocaleString('es-GT', { maximumFractionDigits: 1 }) + 'K';
-        }
-        return 'Q' + num.toLocaleString('es-GT', { maximumFractionDigits: 0 });
+        return 'Q' + num.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     };
 
     new Chart(document.getElementById('chartIngresosEgresos'), {
@@ -198,7 +195,7 @@ $anioActual = (int) date('Y');
                     align: 'top',
                     color: '#495057',
                     font: { size: 10, weight: '600' },
-                    formatter: function (valor) { return valor > 0 ? fmtQCorto(valor) : null; },
+                    formatter: function (valor) { return valor > 0 ? fmtQCompleto(valor) : null; },
                 },
             },
             scales: { y: { beginAtZero: true } },
@@ -246,8 +243,8 @@ $anioActual = (int) date('Y');
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillStyle = '#16324a';
-                ctx.font = 'bold 16px "Segoe UI", sans-serif';
-                ctx.fillText(fmtQCorto(suma), cx, cy);
+                ctx.font = 'bold 13px "Segoe UI", sans-serif';
+                ctx.fillText(fmtQCompleto(suma), cx, cy);
                 ctx.restore();
             },
         };
@@ -329,7 +326,7 @@ $anioActual = (int) date('Y');
                     align: 'top',
                     color: '#495057',
                     font: { size: 10, weight: '600' },
-                    formatter: function (valor) { return valor !== 0 ? fmtQCorto(valor) : null; },
+                    formatter: function (valor) { return valor !== 0 ? fmtQCompleto(valor) : null; },
                 },
             },
             scales: { y: { beginAtZero: true } },
