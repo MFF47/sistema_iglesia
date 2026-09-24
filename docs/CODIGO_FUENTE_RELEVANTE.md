@@ -141,7 +141,7 @@ La solución no se limita a ocultar los campos en la interfaz: el controlador de
 ```php
 $esUsuarioActual = $id && (int) Auth::user()['id_usuario'] === (int) $id;
 
-// El cambio de contraseña del propio usuario logueado se hace desde
+
 // "Cambiar contraseña" (confirma la contraseña actual); este formulario
 // de Usuarios nunca la modifica para el usuario logueado, aunque se envíe.
 $contrasena = $esUsuarioActual ? '' : ($_POST['contrasena'] ?? '');

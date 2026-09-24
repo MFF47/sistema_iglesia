@@ -5,6 +5,23 @@ Este manual describe los módulos ya construidos y cómo usarlos. Los 10 módulo
 
 **Demo funcional:** 27 de septiembre de 2026.
 
+> **Nota para quien continúe este documento:** el manual está completo en contenido. Cada sección numerada termina con una línea **"Captura de pantalla sugerida"** indicando qué pantalla capturar y en qué orden — falta únicamente tomar esas capturas contra el sistema corriendo, insertarlas, y maquetar el documento según el formato de tesis de la universidad (portada, numeración de página, etc.).
+
+## Índice
+
+1. [Ingreso al sistema (Login)](#1-ingreso-al-sistema-login)
+2. [Roles y qué puede hacer cada uno](#2-roles-y-qué-puede-hacer-cada-uno)
+3. [Dashboard](#3-dashboard)
+4. [Categorías](#4-categorías-solo-administrador)
+5. [Aportantes](#5-aportantes-solo-administrador)
+6. [Usuarios y Roles](#6-usuarios-y-roles-solo-administrador)
+7. [Ingresos](#7-ingresos-administrador-y-tesorero-gestionan-supervisor-solo-consulta)
+8. [Egresos](#8-egresos-mismo-esquema-de-permisos-que-ingresos)
+9. [Facturas y Recibos](#9-facturas-y-recibos-mismo-esquema-de-permisos)
+10. [Reportería](#10-reportería-todos-los-roles-incluido-consulta)
+11. [Bitácora](#11-bitácora-administrador-y-supervisor)
+12. [Anexo: Notas técnicas para quien administre el sistema](#anexo-notas-técnicas-para-quien-administre-el-sistema)
+
 ---
 
 ## 1. Ingreso al sistema (Login)
@@ -70,6 +87,8 @@ Una vez ambos servicios están arriba, continúe con el login:
 
 Estos usuarios se crearon con scripts temporales (`tmp_create_admin.php`, `tmp_create_test_users.php`) para poder probar el sistema. Se recomienda **cambiar sus contraseñas o eliminarlos** antes de usar el sistema con datos reales de la iglesia.
 
+**Captura de pantalla sugerida:** (1) la pantalla de login; (2) el mensaje de cuenta bloqueada tras 5 intentos fallidos; (3) la pantalla "Recuperar Contraseña" y el correo recibido; (4) la pantalla "Nueva Contraseña" con el listado de requisitos.
+
 ---
 
 ## 2. Roles y qué puede hacer cada uno
@@ -88,6 +107,8 @@ Estos usuarios se crearon con scripts temporales (`tmp_create_admin.php`, `tmp_c
 
 "Gestionar" incluye crear, editar y anular. "Solo ver"/"Ver" significa que el módulo aparece en el menú y se puede consultar, pero no aparecen los botones para crear, editar o anular. El menú lateral (sidebar) muestra automáticamente solo las opciones permitidas para el rol de la sesión activa — tanto en escritorio como en el menú móvil.
 
+**Captura de pantalla sugerida:** el menú lateral abierto con la sesión de un Administrador, y otra captura del mismo menú con la sesión de un rol Consulta, para evidenciar la diferencia de opciones visibles.
+
 ---
 
 ## 3. Dashboard
@@ -104,6 +125,8 @@ Pantalla de inicio tras iniciar sesión (`Dashboard` en el menú).
 - **Gráfica "Comparativo Mensual del Año"**: balance (ingresos − egresos) mes a mes del año en curso, con el monto sobre cada barra; a media anchura, junto a la dona de egresos.
 - **Gráfica "Distribución de Egresos por Categoría"**: dona con el peso de cada categoría de gasto (Servicios Públicos, Materiales y Suministros, etc.) del período seleccionado — misma mecánica que la dona de Ingresos (porcentaje por segmento, monto en el centro, nombre arriba de la dona). Permite ver no solo de dónde entra el dinero, sino en qué se está gastando.
 
+**Captura de pantalla sugerida:** el Dashboard completo con sus cuatro gráficas visibles; opcionalmente una segunda captura de una dona con un segmento aislado desde la leyenda (mostrando "Subtotal" en vez de "Total").
+
 ---
 
 ## 4. Categorías *(solo Administrador)*
@@ -116,6 +139,8 @@ Menú: **Gestión → Categorías**. Clasifican todos los ingresos y egresos del
 - No se permite un nombre duplicado dentro del mismo tipo (puede repetirse el nombre entre una categoría de ingreso y una de egreso).
 - **No se pueden eliminar** — solo desactivar, para no perder el historial de los movimientos que ya las usan.
 
+**Captura de pantalla sugerida:** el listado de Categorías mostrando ambas tablas (Ingreso y Egreso) y el formulario de "+ Nueva Categoría".
+
 ---
 
 ## 5. Aportantes *(solo Administrador)*
@@ -126,6 +151,8 @@ Menú: **Gestión → Aportantes**. Son las personas identificadas en los ingres
 - **+ Nuevo Aportante**: nombre completo (obligatorio), documento de identidad, teléfono, correo, dirección, observaciones — todos opcionales salvo el nombre.
 - **Editar** y **Activar/Desactivar**, igual que en los demás catálogos.
 - También se puede crear un aportante **al vuelo** desde el formulario de Ingresos (botón "+ Registrar Nuevo Aportante"), sin pasar por esta pantalla — esta vista sirve para **corregir o completar** sus datos después.
+
+**Captura de pantalla sugerida:** el listado de Aportantes y el formulario de "+ Nuevo Aportante".
 
 ---
 
@@ -141,6 +168,8 @@ Menú: **Gestión → Usuarios y Roles**.
 ### Cambiar mi propia contraseña *(todos los roles)*
 
 Desde el ícono de llave en la barra superior ("Cambiar contraseña"), cualquier usuario logueado puede actualizar su propia contraseña sin pasar por el correo de recuperación. Debe ingresar su **contraseña actual** (se valida antes de permitir el cambio) más la nueva contraseña dos veces, cumpliendo las mismas reglas de seguridad.
+
+**Captura de pantalla sugerida:** el listado de Usuarios; el formulario de edición del propio usuario mostrando el aviso "Cambiar mi contraseña" en vez de los campos de contraseña; y la pantalla dedicada "Cambiar Contraseña".
 
 ---
 
@@ -160,6 +189,8 @@ Menú: **Movimientos → Ingresos**.
 - **Anular**: oculta el ingreso del listado y de todos los totales/KPIs, y **anula también el documento vinculado**, avisando antes con un mensaje de confirmación. El registro no se borra de la base de datos (queda para auditoría en la Bitácora).
 - Todo cambio en cascada (crear/editar/anular documentos por esta vía) queda registrado en la **Bitácora**.
 
+**Captura de pantalla sugerida:** el listado de Ingresos con la píldora "Total filtrado" visible; el formulario "+ Nuevo Ingreso" con la zona de comprobante; y el cuadro de confirmación al anular un ingreso con documento vinculado.
+
 ---
 
 ## 8. Egresos *(mismo esquema de permisos que Ingresos)*
@@ -175,6 +206,8 @@ Menú: **Movimientos → Egresos**.
 - **Vincular Factura (opcional)**: alternativa manual — elija una factura ya registrada, o cree una nueva con el botón **"+ Registrar Nueva Factura"** sin salir del formulario. Si sube un comprobante directamente, ese siempre tiene prioridad sobre esta selección.
 - **Editar/Anular** con documento vinculado: mismo comportamiento en cascada que en Ingresos (avisa, actualiza o anula el documento vinculado, y lo registra en Bitácora).
 
+**Captura de pantalla sugerida:** el listado de Egresos con la advertencia visual de monto superior al disponible; y el formulario "+ Nuevo Egreso" con la sección "Vincular Factura".
+
 ---
 
 ## 9. Facturas y Recibos *(mismo esquema de permisos)*
@@ -187,6 +220,8 @@ Menú: **Movimientos → Facturas y Recibos**. Aquí se ven **todos** los docume
 - **Vincular a un Movimiento (opcional)**: asocie el documento a un **Egreso** o a un **Ingreso** ya existente. La columna "Vinculado a" del listado muestra a cuál pertenece.
 - **Editar un documento vinculado**: el sistema avisa antes de guardar que el ingreso/egreso asociado también se actualizará (monto, fecha, beneficiario), y lo hace automáticamente al confirmar.
 - **Anular**: si el documento está vinculado, también anula el ingreso/egreso asociado (con aviso previo). El registro no se borra de la base de datos.
+
+**Captura de pantalla sugerida:** el listado de Facturas y Recibos con el filtro "Vinculado a" aplicado, y el formulario de "+ Nueva Factura".
 
 ---
 
@@ -202,6 +237,8 @@ Menú: **Reportes → Reportería**.
 4. **Exportar PDF**: descarga directamente un PDF con el mismo estilo institucional (no abre ninguna ventana de impresión).
 5. Cada vez que se presiona **Generar** (no solo al exportar), la consulta queda registrada en la Bitácora, ya que desde ahí se puede ver información financiera sensible.
 
+**Captura de pantalla sugerida:** la vista previa de un Reporte Consolidado con sus KPIs y tabla; y una página del PDF o Excel exportado mostrando el estilo institucional.
+
 ---
 
 ## 11. Bitácora *(Administrador y Supervisor)*
@@ -214,9 +251,11 @@ Menú: **Reportes → Bitácora**. Registro de auditoría de todo lo que ocurre 
 - **Filtros**: rango de fecha, usuario, módulo, acción. El filtro de fecha incluye el día completo (de 00:00:00 a 23:59:59), así que buscar con la fecha de hoy sí muestra los eventos de hoy.
 - **Exportar Bitácora**: descarga un **PDF** con estilo institucional (ya no exporta a Excel, y ya no muestra la columna IP Origen ni en pantalla ni en la exportación).
 
+**Captura de pantalla sugerida:** el listado de Bitácora con filtros aplicados (ej. fecha de hoy) y la columna Descripción mostrando varias líneas.
+
 ---
 
-## Notas para quien administre el sistema
+## Anexo: Notas técnicas para quien administre el sistema
 
 - Los comprobantes y documentos (Ingresos, Egresos y Facturas) se guardan en `storage/facturas/`, y los comprobantes antiguos previos a este cambio siguen disponibles en `storage/adjuntos/` — ambas carpetas **fuera del acceso público** (protegidas con `.htaccess`); solo se pueden ver a través del sistema, con sesión iniciada y permiso sobre el módulo correspondiente.
 - El proyecto ahora usa **Composer** (`composer.json` / `composer.lock` / carpeta `vendor/`, también protegida por `.htaccess`) para dos librerías: `phpoffice/phpspreadsheet` (Excel) y `dompdf/dompdf` (PDF). Si se copia el proyecto a otra máquina, hay que correr `composer install` una vez. Esto requirió habilitar las extensiones de PHP `gd` y `zip` en `C:\xampp\php\php.ini` (ya están activadas en este equipo).
