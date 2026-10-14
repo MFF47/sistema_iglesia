@@ -104,7 +104,14 @@ class AuthController extends Controller {
 
         try {
             Mailer::enviar($correo, $usuario['nombre_completo'], 'Recuperación de contraseña', $cuerpo);
-            Bitacora::registrar('Recuperación de contraseña', 'Autenticación', "Se envió enlace de recuperación al usuario '{$usuario['nombre_usuario']}'");
+            Bitacora::registrar(
+                'Recuperación de contraseña',
+                'Autenticación',
+                "Se envió enlace de recuperación al usuario '{$usuario['nombre_usuario']}'",
+                null,
+                null,
+                ['id_usuario' => $usuario['id_usuario'], 'nombre_usuario' => $usuario['nombre_usuario']]
+            );
         } catch (Exception $e) {
             error_log('Error al enviar enlace de recuperación: ' . $e->getMessage());
         }
@@ -148,7 +155,14 @@ class AuthController extends Controller {
                 $sesionModel->marcarComoUsado($sesion['id_sesion']);
 
                 $usuario = $usuarioModel->buscarPorId($sesion['id_usuario']);
-                Bitacora::registrar('Restablecimiento de contraseña', 'Autenticación', "El usuario '{$usuario['nombre_usuario']}' restableció su contraseña");
+                Bitacora::registrar(
+                    'Restablecimiento de contraseña',
+                    'Autenticación',
+                    "El usuario '{$usuario['nombre_usuario']}' restableció su contraseña",
+                    null,
+                    null,
+                    ['id_usuario' => $usuario['id_usuario'], 'nombre_usuario' => $usuario['nombre_usuario']]
+                );
 
                 Flash::set('success', 'Contraseña actualizada correctamente. Ya puede iniciar sesión.');
                 $this->redirect('index.php?c=auth&a=login');
@@ -192,7 +206,10 @@ class AuthController extends Controller {
         Bitacora::registrar(
             'Login fallido',
             'Autenticación',
-            "Intento de inicio de sesión fallido usando usuario '{$nombreUsuario}' — Contraseña incorrecta"
+            "Intento de inicio de sesión fallido usando usuario '{$nombreUsuario}' — Contraseña incorrecta",
+            null,
+            null,
+            ['id_usuario' => $usuario['id_usuario'] ?? null, 'nombre_usuario' => $nombreUsuario]
         );
 
         return 'Usuario o contraseña incorrectos.';

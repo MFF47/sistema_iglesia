@@ -5,7 +5,7 @@ Este manual describe los módulos ya construidos y cómo usarlos. Los 10 módulo
 
 **Demo funcional:** 27 de septiembre de 2026.
 
-> **Nota para quien continúe este documento:** el manual está completo en contenido. Cada sección numerada termina con una línea **"Captura de pantalla sugerida"** indicando qué pantalla capturar y en qué orden — falta únicamente tomar esas capturas contra el sistema corriendo, insertarlas, y maquetar el documento según el formato de tesis de la universidad (portada, numeración de página, etc.).
+> **Nota para quien continúe este documento:** el manual ya está completo en contenido y capturas — cada sección incluye capturas de pantalla reales, tomadas contra el sistema corriendo (`docs/capturas/`). Solo falta maquetar el documento según el formato de tesis de la universidad (portada, numeración de página, etc.).
 
 ## Índice
 
@@ -87,7 +87,17 @@ Una vez ambos servicios están arriba, continúe con el login:
 
 Estos usuarios se crearon con scripts temporales (`tmp_create_admin.php`, `tmp_create_test_users.php`) para poder probar el sistema. Se recomienda **cambiar sus contraseñas o eliminarlos** antes de usar el sistema con datos reales de la iglesia.
 
-**Captura de pantalla sugerida:** (1) la pantalla de login; (2) el mensaje de cuenta bloqueada tras 5 intentos fallidos; (3) la pantalla "Recuperar Contraseña" y el correo recibido; (4) la pantalla "Nueva Contraseña" con el listado de requisitos.
+![Pantalla de login](capturas/01_login.png)
+*Pantalla de inicio de sesión.*
+
+![Cuenta bloqueada tras intentos fallidos](capturas/02_login_bloqueado.png)
+*Mensaje mostrado al intentar ingresar con la contraseña correcta en una cuenta ya bloqueada por intentos fallidos.*
+
+![Pantalla Recuperar Contraseña](capturas/03_recuperar_password.png)
+*Solicitud del enlace de recuperación.*
+
+![Pantalla Nueva Contraseña](capturas/04_nueva_password.png)
+*Formulario para definir la nueva contraseña, con el listado de requisitos.*
 
 ---
 
@@ -107,7 +117,11 @@ Estos usuarios se crearon con scripts temporales (`tmp_create_admin.php`, `tmp_c
 
 "Gestionar" incluye crear, editar y anular. "Solo ver"/"Ver" significa que el módulo aparece en el menú y se puede consultar, pero no aparecen los botones para crear, editar o anular. El menú lateral (sidebar) muestra automáticamente solo las opciones permitidas para el rol de la sesión activa — tanto en escritorio como en el menú móvil.
 
-**Captura de pantalla sugerida:** el menú lateral abierto con la sesión de un Administrador, y otra captura del mismo menú con la sesión de un rol Consulta, para evidenciar la diferencia de opciones visibles.
+![Menú lateral con sesión de Administrador](capturas/05_dashboard_admin.png)
+*Menú lateral completo visible para el rol Administrador (Dashboard, Movimientos, Gestión y Reportes).*
+
+![Menú lateral con sesión de Consulta](capturas/06_dashboard_consulta.png)
+*El mismo menú con la sesión de un rol Consulta: solo ve Dashboard y Reportería.*
 
 ---
 
@@ -125,7 +139,8 @@ Pantalla de inicio tras iniciar sesión (`Dashboard` en el menú).
 - **Gráfica "Comparativo Mensual del Año"**: balance (ingresos − egresos) mes a mes del año en curso, con el monto sobre cada barra; a media anchura, junto a la dona de egresos.
 - **Gráfica "Distribución de Egresos por Categoría"**: dona con el peso de cada categoría de gasto (Servicios Públicos, Materiales y Suministros, etc.) del período seleccionado — misma mecánica que la dona de Ingresos (porcentaje por segmento, monto en el centro, nombre arriba de la dona). Permite ver no solo de dónde entra el dinero, sino en qué se está gastando.
 
-**Captura de pantalla sugerida:** el Dashboard completo con sus cuatro gráficas visibles; opcionalmente una segunda captura de una dona con un segmento aislado desde la leyenda (mostrando "Subtotal" en vez de "Total").
+![Dashboard completo](capturas/05_dashboard_admin.png)
+*Dashboard con sus cuatro gráficas: barras de Ingresos vs Egresos, dona de Distribución de Ingresos, línea de Comparativo Mensual, y dona de Distribución de Egresos por Categoría.*
 
 ---
 
@@ -139,7 +154,11 @@ Menú: **Gestión → Categorías**. Clasifican todos los ingresos y egresos del
 - No se permite un nombre duplicado dentro del mismo tipo (puede repetirse el nombre entre una categoría de ingreso y una de egreso).
 - **No se pueden eliminar** — solo desactivar, para no perder el historial de los movimientos que ya las usan.
 
-**Captura de pantalla sugerida:** el listado de Categorías mostrando ambas tablas (Ingreso y Egreso) y el formulario de "+ Nueva Categoría".
+![Listado de Categorías](capturas/08_categorias.png)
+*Listado con ambas tablas: Categorías de Ingreso y Categorías de Egreso.*
+
+![Formulario Nueva Categoría](capturas/09_categoria_nueva.png)
+*Formulario de creación de una nueva categoría.*
 
 ---
 
@@ -152,7 +171,11 @@ Menú: **Gestión → Aportantes**. Son las personas identificadas en los ingres
 - **Editar** y **Activar/Desactivar**, igual que en los demás catálogos.
 - También se puede crear un aportante **al vuelo** desde el formulario de Ingresos (botón "+ Registrar Nuevo Aportante"), sin pasar por esta pantalla — esta vista sirve para **corregir o completar** sus datos después.
 
-**Captura de pantalla sugerida:** el listado de Aportantes y el formulario de "+ Nuevo Aportante".
+![Listado de Aportantes](capturas/10_aportantes.png)
+*Listado de aportantes registrados.*
+
+![Formulario Nuevo Aportante](capturas/11_aportante_nuevo.png)
+*Formulario de registro de un nuevo aportante.*
 
 ---
 
@@ -169,7 +192,14 @@ Menú: **Gestión → Usuarios y Roles**.
 
 Desde el ícono de llave en la barra superior ("Cambiar contraseña"), cualquier usuario logueado puede actualizar su propia contraseña sin pasar por el correo de recuperación. Debe ingresar su **contraseña actual** (se valida antes de permitir el cambio) más la nueva contraseña dos veces, cumpliendo las mismas reglas de seguridad.
 
-**Captura de pantalla sugerida:** el listado de Usuarios; el formulario de edición del propio usuario mostrando el aviso "Cambiar mi contraseña" en vez de los campos de contraseña; y la pantalla dedicada "Cambiar Contraseña".
+![Listado de Usuarios](capturas/12_usuarios.png)
+*Listado de usuarios del sistema.*
+
+![Edición del propio usuario](capturas/13_usuario_editar_propio.png)
+*Al editar su propio usuario, los campos de contraseña se reemplazan por el aviso y el botón "Cambiar mi contraseña".*
+
+![Pantalla Cambiar Contraseña](capturas/14_cambiar_password.png)
+*Pantalla dedicada de autogestión de contraseña, accesible desde el ícono de llave en la barra superior.*
 
 ---
 
@@ -189,7 +219,11 @@ Menú: **Movimientos → Ingresos**.
 - **Anular**: oculta el ingreso del listado y de todos los totales/KPIs, y **anula también el documento vinculado**, avisando antes con un mensaje de confirmación. El registro no se borra de la base de datos (queda para auditoría en la Bitácora).
 - Todo cambio en cascada (crear/editar/anular documentos por esta vía) queda registrado en la **Bitácora**.
 
-**Captura de pantalla sugerida:** el listado de Ingresos con la píldora "Total filtrado" visible; el formulario "+ Nuevo Ingreso" con la zona de comprobante; y el cuadro de confirmación al anular un ingreso con documento vinculado.
+![Listado de Ingresos](capturas/15_ingresos.png)
+*Listado de Ingresos con el Disponible Caja General, los KPIs del mes, y la píldora "Total filtrado" al pie.*
+
+![Formulario Nuevo Ingreso](capturas/16_ingreso_nuevo.png)
+*Formulario de registro de un nuevo ingreso.*
 
 ---
 
@@ -206,7 +240,11 @@ Menú: **Movimientos → Egresos**.
 - **Vincular Factura (opcional)**: alternativa manual — elija una factura ya registrada, o cree una nueva con el botón **"+ Registrar Nueva Factura"** sin salir del formulario. Si sube un comprobante directamente, ese siempre tiene prioridad sobre esta selección.
 - **Editar/Anular** con documento vinculado: mismo comportamiento en cascada que en Ingresos (avisa, actualiza o anula el documento vinculado, y lo registra en Bitácora).
 
-**Captura de pantalla sugerida:** el listado de Egresos con la advertencia visual de monto superior al disponible; y el formulario "+ Nuevo Egreso" con la sección "Vincular Factura".
+![Listado de Egresos](capturas/17_egresos.png)
+*Listado de Egresos.*
+
+![Advertencia de monto superior al disponible](capturas/18_egreso_nuevo_advertencia.png)
+*Formulario "Nuevo Egreso": al ingresar un monto superior al Disponible Caja General, aparece la advertencia visual bajo el campo.*
 
 ---
 
@@ -221,7 +259,11 @@ Menú: **Movimientos → Facturas y Recibos**. Aquí se ven **todos** los docume
 - **Editar un documento vinculado**: el sistema avisa antes de guardar que el ingreso/egreso asociado también se actualizará (monto, fecha, beneficiario), y lo hace automáticamente al confirmar.
 - **Anular**: si el documento está vinculado, también anula el ingreso/egreso asociado (con aviso previo). El registro no se borra de la base de datos.
 
-**Captura de pantalla sugerida:** el listado de Facturas y Recibos con el filtro "Vinculado a" aplicado, y el formulario de "+ Nueva Factura".
+![Listado de Facturas y Recibos](capturas/19_facturas.png)
+*Listado con el filtro "Vinculado a: Ingresos" aplicado.*
+
+![Formulario Nueva Factura](capturas/20_factura_nueva.png)
+*Formulario de registro manual de una factura o recibo.*
 
 ---
 
@@ -237,7 +279,11 @@ Menú: **Reportes → Reportería**.
 4. **Exportar PDF**: descarga directamente un PDF con el mismo estilo institucional (no abre ninguna ventana de impresión).
 5. Cada vez que se presiona **Generar** (no solo al exportar), la consulta queda registrada en la Bitácora, ya que desde ahí se puede ver información financiera sensible.
 
-**Captura de pantalla sugerida:** la vista previa de un Reporte Consolidado con sus KPIs y tabla; y una página del PDF o Excel exportado mostrando el estilo institucional.
+![Vista previa de Reportería](capturas/21_reporteria_preview.png)
+*Vista previa de un Reporte Consolidado, con sus KPIs (Total Ingresos, Total Egresos, Balance, Registros) y la tabla detallada.*
+
+![Reporte exportado a PDF](capturas/22_reporteria_pdf.png)
+*El mismo reporte exportado a PDF, con el estilo institucional (encabezado navy/teal, totales destacados).*
 
 ---
 
@@ -251,7 +297,8 @@ Menú: **Reportes → Bitácora**. Registro de auditoría de todo lo que ocurre 
 - **Filtros**: rango de fecha, usuario, módulo, acción. El filtro de fecha incluye el día completo (de 00:00:00 a 23:59:59), así que buscar con la fecha de hoy sí muestra los eventos de hoy.
 - **Exportar Bitácora**: descarga un **PDF** con estilo institucional (ya no exporta a Excel, y ya no muestra la columna IP Origen ni en pantalla ni en la exportación).
 
-**Captura de pantalla sugerida:** el listado de Bitácora con filtros aplicados (ej. fecha de hoy) y la columna Descripción mostrando varias líneas.
+![Listado de Bitácora](capturas/23_bitacora.png)
+*Bitácora filtrada por un día específico, mostrando distintos tipos de eventos (Login, Login fallido, Consultar, Exportar, Modificar) y la columna Descripción con varias líneas por evento.*
 
 ---
 
@@ -263,4 +310,4 @@ Menú: **Reportes → Bitácora**. Registro de auditoría de todo lo que ocurre 
 - **Diseño responsivo**: el menú lateral se oculta en pantallas de celular y se abre con el botón de hamburguesa (☰) junto al logo. Si algo se ve apretado en un equipo específico, revisar primero el zoom del navegador.
 - Los archivos `tmp_create_admin.php` y `tmp_create_test_users.php` son herramientas de un solo uso para crear los usuarios iniciales. Pueden borrarse cuando ya no se necesiten.
 - **Pendiente**: una decisión sobre cómo registrar traslados internos entre caja y banco (el esquema actual no tiene concepto de "cuentas"). No queda ningún módulo o pantalla sin construir. (Se evaluó una pantalla de Configuración del sistema, pero se decidió que no era necesaria para el alcance del proyecto y se descartó — incluida la tabla `configuracion`, que se eliminó de la base de datos.)
-- **Cambios de esquema de base de datos**: se agregó la columna `id_factura` (nullable) a la tabla `ingresos`, para que los ingresos también puedan vincularse a un documento igual que los egresos (cambio aditivo, no afecta datos existentes). Por otro lado, se **eliminó la tabla `configuracion`** (existía vacía desde el script SQL original; se llegó a construir una pantalla de parámetros generales sobre ella, pero se decidió que no era necesaria y se revirtió por completo). El esquema pasó de 13 a 12 tablas.
+- **Cambios de esquema de base de datos**: se agregó la columna `id_factura` (nullable) a la tabla `ingresos`, para que los ingresos también puedan vincularse a un documento igual que los egresos (cambio aditivo, no afecta datos existentes). Por otro lado, se **eliminó la tabla** `configuracion` (existía vacía desde el script SQL original; se llegó a construir una pantalla de parámetros generales sobre ella, pero se decidió que no era necesaria y se revirtió por completo). El esquema pasó de 13 a 12 tablas.

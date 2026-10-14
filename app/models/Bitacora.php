@@ -3,8 +3,11 @@ require_once __DIR__ . '/../../core/Model.php';
 require_once __DIR__ . '/../../core/Auth.php';
 
 class Bitacora extends Model {
-    public static function registrar($accion, $modulo, $descripcion, $tablaAfectada = null, $idRegistroAfectado = null) {
-        $usuario = Auth::user();
+    // $usuarioForzado permite identificar al usuario en eventos sin sesión activa
+    // (login fallido, recuperación de contraseña), donde Auth::user() es null
+    // aunque la identidad del usuario involucrado sí se conozca.
+    public static function registrar($accion, $modulo, $descripcion, $tablaAfectada = null, $idRegistroAfectado = null, $usuarioForzado = null) {
+        $usuario = $usuarioForzado ?? Auth::user();
         $pdo = Database::getConnection();
 
         $stmt = $pdo->prepare(
