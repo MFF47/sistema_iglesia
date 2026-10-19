@@ -1,2 +1,5 @@
 /vendor/
 /config/mail.php
+/config/database.php
+/config/app.php
+/storage/logs/*.log
