@@ -86,14 +86,15 @@ Regla de complejidad centralizada en `core/PasswordPolicy.php` (mínimo 8 caract
 - **Seguridad**: `storage/` y `vendor/` protegidos con `.htaccess` (`Require all denied`) contra acceso directo por URL — importante porque todo el proyecto vive bajo `htdocs/`, no solo `public/`.
 - Se resolvió una corrupción real de MySQL (motor Aria + tabla de privilegios) que impedía arrancar el servicio; quedó documentado el diagnóstico por si se repite.
 - `.gitignore` agregado (no existía) para no versionar `vendor/`.
+- **Preparación para producción**: `config/database.php`, `config/app.php` (debug/timezone/HTTPS) y `config/mail.php` ya no se versionan en git — cada uno con su plantilla `*.example.php`. `public/index.php` ahora fija la zona horaria en código (no depende del `php.ini` del servidor), registra errores en `storage/logs/` en vez de mostrarlos, fuerza HTTPS y endurece la cookie de sesión (`HttpOnly`/`SameSite`/`Secure`) según configuración. Se agregaron `.htaccess` en `app/`, `core/`, `config/` y `sql/` (antes solo `storage/` y `vendor/` estaban protegidos). `sql/instalacion.sql` siembra un esquema limpio (roles y tipos de ingreso únicamente). `sql/crear_administrador.php` reemplaza a los antiguos `tmp_*.php` (ya eliminados) para crear el primer Administrador de forma segura. `generar_paquete.ps1` arma el `.zip` de despliegue.
 
 ---
 
 ## Pendiente
 
-- **Configurar SMTP definitivo**: `config/mail.php` usa temporalmente un correo personal para pruebas/demo; reemplazar por las credenciales del hosting antes de producción.
+- **Despliegue a producción en curso** (hosting Namecheap Stellar/cPanel, dominio `finanzasnv.com`): preparación del código ya completa (ver "Preparación para producción" en Infraestructura, arriba) y paquete `.zip` ya generado y verificado. Falta ejecutar en el cPanel real: subir el paquete, importar `sql/instalacion.sql`, crear `config/database.php`/`app.php`/`mail.php` de producción, cambiar el Document Root a `public/`, crear el correo SMTP y el primer Administrador, y correr la lista de verificación final.
+- **Configurar SMTP definitivo**: `config/mail.php` usa temporalmente un correo personal para pruebas/demo; se reemplazará por una cuenta de correo del hosting (ej. `noreply@finanzasnv.com`) durante el despliegue.
 - **Traslados internos entre caja y banco**: el esquema actual no tiene concepto de "cuentas"; queda pendiente de decisión con quien lleva la tesorería.
-- Revisar antes de producción: mover el `DocumentRoot` del hosting final a `public/`, o replicar los `.htaccess` de protección a `app/`, `core/`, `config/`.
 - Confirmar visualmente el diseño responsivo en un celular real (se verificó matemáticamente que no hay desbordamiento horizontal, pero la herramienta de captura usada en desarrollo no permite simular un ancho de teléfono real menor a ~500px).
 
 ---
@@ -107,4 +108,4 @@ Regla de complejidad centralizada en `core/PasswordPolicy.php` (mínimo 8 caract
 | `supervisor1` | `Tester123!` | Supervisor |
 | `consulta1` | `Tester123!` | Consulta |
 
-*(scripts `tmp_create_admin.php` / `tmp_create_test_users.php` — borrar o cambiar contraseñas antes de producción)*
+*(usuarios de ambiente de desarrollo local únicamente; los scripts que los crearon ya se eliminaron del proyecto — en producción el primer Administrador se crea con `sql/crear_administrador.php` y no se siembra ningún usuario de prueba)*
