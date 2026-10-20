@@ -67,10 +67,13 @@ class Mailer {
             $mail->isSMTP();
             $mail->Host = $config['host'];
             $mail->Port = $config['port'];
+            $mail->Timeout = 15;
             $mail->SMTPAuth = true;
             $mail->Username = $config['usuario'];
             $mail->Password = $config['clave'];
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+            $mail->SMTPSecure = (($config['encripcion'] ?? 'tls') === 'ssl')
+                ? PHPMailer::ENCRYPTION_SMTPS
+                : PHPMailer::ENCRYPTION_STARTTLS;
             $mail->CharSet = 'UTF-8';
 
             $mail->setFrom($config['remitente_correo'], $config['remitente_nombre']);
