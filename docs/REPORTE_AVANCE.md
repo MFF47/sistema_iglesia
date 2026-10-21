@@ -90,12 +90,17 @@ Regla de complejidad centralizada en `core/PasswordPolicy.php` (mínimo 8 caract
 
 ---
 
+## Despliegue a producción
+
+**Completado.** El sistema está en vivo en `https://finanzasnv.com` (hosting Namecheap Stellar/cPanel), con base de datos, Administrador, SMTP y permisos funcionando, y la lista de verificación completa aprobada (login, bloqueo, recuperación de contraseña, HTTPS forzado, restricción de roles, Ingresos/Egresos/Facturas con comprobante, exportación Excel/PDF, Bitácora con hora correcta, 403 en carpetas protegidas). El correo definitivo quedó configurado como `noreply@finanzasnv.com`. El procedimiento de mantenimiento y los problemas ya diagnosticados durante el despliegue están documentados en `docs/MANTENIMIENTO.md`.
+
+El diseño responsivo también se confirmó visualmente en un celular real durante las pruebas de despliegue (antes solo se había verificado matemáticamente).
+
 ## Pendiente
 
-- **Despliegue a producción en curso** (hosting Namecheap Stellar/cPanel, dominio `finanzasnv.com`): preparación del código ya completa (ver "Preparación para producción" en Infraestructura, arriba) y paquete `.zip` ya generado y verificado. Falta ejecutar en el cPanel real: subir el paquete, importar `sql/instalacion.sql`, crear `config/database.php`/`app.php`/`mail.php` de producción, cambiar el Document Root a `public/`, crear el correo SMTP y el primer Administrador, y correr la lista de verificación final.
-- **Configurar SMTP definitivo**: `config/mail.php` usa temporalmente un correo personal para pruebas/demo; se reemplazará por una cuenta de correo del hosting (ej. `noreply@finanzasnv.com`) durante el despliegue.
-- **Traslados internos entre caja y banco**: el esquema actual no tiene concepto de "cuentas"; queda pendiente de decisión con quien lleva la tesorería.
-- Confirmar visualmente el diseño responsivo en un celular real (se verificó matemáticamente que no hay desbordamiento horizontal, pero la herramienta de captura usada en desarrollo no permite simular un ancho de teléfono real menor a ~500px).
+- **Git™ Version Control de cPanel**: está disponible en el hosting, pero pide Shell access habilitado para ver las clone URLs (no se tiene Terminal en este plan). Evaluar si conviene para dejar de depender de subir un `.zip` a mano en cada actualización grande.
+- **Limpiar la base de datos de producción**: tiene mezclados datos reales de prueba (un ingreso/egreso/factura y un usuario Tesorero creados durante la verificación del despliegue) que hay que borrar antes de que la iglesia empiece a usarlo con datos reales.
+- **Cambiar la contraseña del correo `noreply@finanzasnv.com`**: se compartió en texto plano durante el soporte de despliegue; buena práctica rotarla, sin urgencia.
 
 ---
 
