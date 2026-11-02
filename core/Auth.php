@@ -12,6 +12,7 @@ class Auth {
             'rol_nombre'      => $usuario['rol_nombre'],
             'rol_descripcion' => $usuario['rol_descripcion'],
         ];
+        $_SESSION['ultima_actividad'] = time();
     }
 
     public static function logout() {
